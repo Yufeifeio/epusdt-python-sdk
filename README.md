@@ -10,8 +10,6 @@
 - `GET/POST /payments/epay/v1/order/create-transaction/submit.php`
 - GMPay / EPay 两套回调验签
 
-这个 SDK 的设计参考了 `luoyanglang/bepusdt-python-sdk` 的项目结构，但签名方式、接口路径、返回模型和 EPay 兼容逻辑都已经按 `GMWalletApp/epusdt` 的当前实现重新整理。
-
 ## 安装
 
 从 GitHub 安装：
@@ -180,4 +178,3 @@ pip install -e .
 pytest
 python -m build
 ```
-

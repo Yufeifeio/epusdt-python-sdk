@@ -5,11 +5,13 @@ from typing import Any
 import pytest
 
 from epusdt import (
+    APIError,
     EpusdtClient,
     OrderStatus,
     PaymentType,
     PublicConfig,
     SignatureError,
+    ValidationError,
     generate_epay_signature,
     generate_gmpay_signature,
 )
@@ -227,6 +229,58 @@ def test_invalid_callback_signature_raises() -> None:
         client.parse_gmpay_callback(payload)
 
 
+def test_epay_mode_requires_numeric_pid() -> None:
+    client = EpusdtClient(
+        base_url="https://pay.example.com",
+        pid="merchant-a",
+        secret_key="secret",
+    )
+    with pytest.raises(ValidationError):
+        client.build_epay_params(
+            out_trade_no="ORD001",
+            money=100,
+            notify_url="https://merchant.example/notify",
+        )
+    with pytest.raises(ValidationError):
+        client.create_order(
+            order_id="ORD001",
+            amount=100,
+            currency="cny",
+            notify_url="https://merchant.example/notify",
+            payment_type="Epay",
+        )
+
+
+def test_create_epay_order_raises_api_error_on_json_failure() -> None:
+    session = DummySession(
+        [
+            DummyResponse(
+                400,
+                json_data={
+                    "status_code": 10009,
+                    "message": "params error",
+                    "data": None,
+                    "request_id": "rid-4",
+                },
+                text='{"status_code":10009,"message":"params error"}',
+            )
+        ]
+    )
+    client = EpusdtClient(
+        base_url="https://pay.example.com",
+        pid="1000",
+        secret_key="secret",
+        session=session,
+    )
+    with pytest.raises(APIError) as exc:
+        client.create_epay_order(
+            out_trade_no="ORD001",
+            money=100,
+            notify_url="https://merchant.example/notify",
+        )
+    assert exc.value.business_code == 10009
+
+
 def test_checkout_model_parses_payment_type() -> None:
     session = DummySession(
         [
@@ -264,4 +318,3 @@ def test_checkout_model_parses_payment_type() -> None:
     )
     checkout = client.get_checkout("TRADE001")
     assert checkout.payment_type is PaymentType.GMPAY
-

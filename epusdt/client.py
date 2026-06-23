@@ -72,6 +72,10 @@ def _validate_url(name: str, value: Optional[str]) -> Optional[str]:
     return value
 
 
+def _is_numeric_pid(value: str) -> bool:
+    return value.isdigit()
+
+
 def _normalize_amount(name: str, value: Any) -> Any:
     if isinstance(value, bool):
         raise ValidationError(f"{name} must be a number")
@@ -168,6 +172,8 @@ class EpusdtClient:
             payload["name"] = name_text
         payment_type_text = _optional_text("payment_type", payment_type)
         if payment_type_text:
+            if payment_type_text.lower() == "epay" and not _is_numeric_pid(self.pid):
+                raise ValidationError("payment_type=Epay requires a numeric pid")
             payload["payment_type"] = payment_type_text
 
         payload["signature"] = generate_gmpay_signature(payload, self.secret_key)
@@ -220,6 +226,9 @@ class EpusdtClient:
         currency: Optional[Any] = None,
         sign_type: str = "MD5",
     ) -> dict[str, str]:
+        if not _is_numeric_pid(self.pid):
+            raise ValidationError("EPay compatibility mode requires a numeric pid")
+
         params: MutableMapping[str, Any] = {
             "pid": self.pid,
             "money": _normalize_amount("money", money),
@@ -280,7 +289,12 @@ class EpusdtClient:
                 params=params,
             )
 
-        self._raise_for_response(response)
+        payload = None
+        try:
+            payload = response.json()
+        except ValueError:
+            payload = None
+        self._raise_for_response(response, payload if isinstance(payload, Mapping) else None)
         raise ClientError(
             f"unexpected response status: {response.status_code}",
             http_status=response.status_code,
@@ -434,4 +448,3 @@ class EpusdtClient:
             http_status=response.status_code,
             response_text=response.text,
         )
-
