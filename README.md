@@ -1,4 +1,4 @@
-# epusdt Python SDK
+# EPUSDT Python SDK ✨
 
 [![PyPI version](https://img.shields.io/pypi/v/epusdt.svg)](https://pypi.org/project/epusdt/)
 [![Python versions](https://img.shields.io/pypi/pyversions/epusdt.svg)](https://pypi.org/project/epusdt/)
@@ -9,14 +9,14 @@
 
 当前版本只封装商户公开支付能力，不包含后台管理接口。
 
-## 相关链接
+## 🔗 相关链接
 
 - Epusdt 官方项目：[GMWalletApp/epusdt](https://github.com/GMWalletApp/epusdt)
 - PyPI 页面：[epusdt](https://pypi.org/project/epusdt/)
 - 更新日志：[CHANGELOG.md](https://github.com/Yufeifeio/epusdt-python-sdk/blob/main/CHANGELOG.md)
 - 示例代码：[同步基础用法](https://github.com/Yufeifeio/epusdt-python-sdk/blob/main/examples/basic_usage.py) / [异步基础用法](https://github.com/Yufeifeio/epusdt-python-sdk/blob/main/examples/async_basic_usage.py) / [Flask](https://github.com/Yufeifeio/epusdt-python-sdk/blob/main/examples/flask_example.py) / [FastAPI](https://github.com/Yufeifeio/epusdt-python-sdk/blob/main/examples/fastapi_example.py) / [Django](https://github.com/Yufeifeio/epusdt-python-sdk/blob/main/examples/django_example.py)
 
-## 核心能力
+## ✨ 核心能力
 
 - GMPay 创建订单
 - 支付配置查询
@@ -30,7 +30,7 @@
 - 官方 `status_code` 业务错误码映射
 - `Django` / `Flask` / `FastAPI` 接入示例
 
-## 官方支持矩阵
+## 🌐 官方支持矩阵
 
 默认启用网络：
 
@@ -54,18 +54,12 @@
 - `TON`：`TON`、`USDT`
 - `Aptos`：`USDC`、`USDT`
 
-补充说明：
-
-- 官方支持按网络新增自定义代币；只要后台已经配置，SDK 可以直接传字符串，例如 `token="MOVEUSD"`。
-- `GRAM` 当前不属于官方默认支持币种，官方测试中会返回 `SupportedAssetNotFound`。
-- 本 README 不宣称 `Arbitrum`、`Base`、`X-Layer`、原生 `ETH`、原生 `BNB` 已支持，因为这次未在官方当前源码中确认到对应公开支付实现。
-
-## 客户端选择
+## ⚙️ 客户端选择
 
 - `EpusdtClient`：适合同步 Web 项目、普通脚本、管理后台任务
 - `AsyncEpusdtClient`：适合 `FastAPI`、异步任务队列、高并发接口服务
 
-## 安装
+## 📦 安装
 
 直接安装：
 
@@ -85,16 +79,14 @@ pip install epusdt[qrcode]
 pip install --upgrade epusdt
 ```
 
-## 内置枚举
+## 🧩 内置枚举
 
 SDK 内置了一组和官方默认支持矩阵对应的常用枚举：
 
 - `Network`：`TRON`、`SOLANA`、`ETHEREUM`、`BSC`、`POLYGON`、`PLASMA`、`TON`、`APTOS`
 - `Token`：`USDT`、`USDC`、`USDC_E`、`TRX`、`SOL`、`TON`
 
-如果你的网关后台新增了自定义代币，不需要等待 SDK 发版，直接传原始字符串即可。
-
-## 快速开始
+## 🚀 快速开始
 
 ### 同步客户端
 
@@ -154,7 +146,7 @@ async def main() -> None:
 asyncio.run(main())
 ```
 
-## 常见用法
+## 🛠️ 常见用法
 
 以下示例默认已经初始化好 `client`。如果你使用异步客户端，对应方法前加 `await` 即可。
 
@@ -321,7 +313,7 @@ image = order.generate_qrcode()
 image.save("epusdt-payment.png")
 ```
 
-## 验证情况
+## ✅ 验证情况
 
 - 单元测试通过
 - 构建通过
@@ -330,6 +322,6 @@ image.save("epusdt-payment.png")
 - 二维码功能烟测通过
 - 同步与异步客户端都已覆盖测试
 
-## 参与开发
+## 🔧 参与开发
 
 本地开发、测试和构建说明见 [CONTRIBUTING.md](https://github.com/Yufeifeio/epusdt-python-sdk/blob/main/CONTRIBUTING.md)。
