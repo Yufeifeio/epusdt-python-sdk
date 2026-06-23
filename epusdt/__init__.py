@@ -18,6 +18,7 @@ from .models import (
     EpayCallback,
     EpayDefaults,
     GmpayCallback,
+    ManualPaymentResponse,
     Network,
     OkpayConfig,
     OrderStatus,
@@ -50,6 +51,7 @@ __all__ = [
     "EpusdtClient",
     "EpusdtError",
     "GmpayCallback",
+    "ManualPaymentResponse",
     "Network",
     "NetworkError",
     "OkpayConfig",
@@ -72,5 +74,5 @@ __all__ = [
     "verify_gmpay_signature",
 ]
 
-__version__ = "0.1.1"
+__version__ = "0.2.0"
 __url__ = "https://github.com/Yufeifeio/epusdt-python-sdk"

@@ -26,6 +26,7 @@ from .models import (
     EPayRedirectResponse,
     EpayCallback,
     GmpayCallback,
+    ManualPaymentResponse,
     PublicConfig,
 )
 from .retry import call_with_retry
@@ -39,6 +40,7 @@ from .signature import (
 
 
 logger = logging.getLogger(__name__)
+USER_AGENT = "epusdt/0.2.0"
 
 
 def _require_text(name: str, value: Any) -> str:
@@ -132,7 +134,7 @@ class EpusdtClient:
         self.retry_delay = retry_delay
         self.session = session or requests.Session()
         self.session.headers.setdefault("Accept", "application/json")
-        self.session.headers.setdefault("User-Agent", "epusdt-sdk/0.1.0")
+        self.session.headers.setdefault("User-Agent", USER_AGENT)
 
     def create_order(
         self,
@@ -211,6 +213,17 @@ class EpusdtClient:
         }
         body = self._json_request("POST", "/pay/switch-network", json_payload=payload)
         return CheckoutOrder.from_dict(body["data"])
+
+    def submit_tx_hash(self, *, trade_id: Any, block_transaction_id: Any) -> ManualPaymentResponse:
+        payload = {
+            "block_transaction_id": _require_text("block_transaction_id", block_transaction_id),
+        }
+        body = self._json_request(
+            "POST",
+            f"/pay/submit-tx-hash/{_require_text('trade_id', trade_id)}",
+            json_payload=payload,
+        )
+        return ManualPaymentResponse.from_dict(body["data"])
 
     def build_epay_params(
         self,

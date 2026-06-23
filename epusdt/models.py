@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import base64
+import io
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum, IntEnum
@@ -37,6 +39,44 @@ class Token(str, Enum):
     TRX = "TRX"
     USDC = "USDC"
     SOL = "SOL"
+
+
+class _QRCodeMixin:
+    def _qrcode_payload(self) -> str:
+        receive_address = str(getattr(self, "receive_address", "") or "").strip()
+        payment_url = str(getattr(self, "payment_url", "") or "").strip()
+        if receive_address:
+            return receive_address
+        if payment_url:
+            return payment_url
+        raise ValueError("no receive_address or payment_url available for QR code generation")
+
+    def generate_qrcode(self, box_size: int = 10, border: int = 4) -> Any:
+        try:
+            import qrcode
+        except ImportError as exc:  # pragma: no cover
+            raise ImportError(
+                "二维码功能需要先安装可选依赖: pip install epusdt[qrcode]"
+            ) from exc
+
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=box_size,
+            border=border,
+        )
+        qr.add_data(self._qrcode_payload())
+        qr.make(fit=True)
+        return qr.make_image(fill_color="black", back_color="white")
+
+    def get_qrcode_base64(self, box_size: int = 10, border: int = 4, format: str = "PNG") -> str:
+        image = self.generate_qrcode(box_size=box_size, border=border)
+        buffer = io.BytesIO()
+        image.save(buffer, format=format)
+        return base64.b64encode(buffer.getvalue()).decode("utf-8")
+
+    def get_qrcode_data_uri(self, box_size: int = 10, border: int = 4) -> str:
+        return f"data:image/png;base64,{self.get_qrcode_base64(box_size=box_size, border=border)}"
 
 
 @dataclass
@@ -125,7 +165,7 @@ class PublicConfig:
 
 
 @dataclass
-class CreateOrderResponse:
+class CreateOrderResponse(_QRCodeMixin):
     trade_id: str
     order_id: str
     amount: float
@@ -158,7 +198,7 @@ class CreateOrderResponse:
 
 
 @dataclass
-class CheckoutOrder:
+class CheckoutOrder(_QRCodeMixin):
     trade_id: str
     amount: float
     actual_amount: float
@@ -212,6 +252,21 @@ class CheckStatusResponse:
         return cls(
             trade_id=str(data["trade_id"]),
             status=OrderStatus(int(data["status"])),
+        )
+
+
+@dataclass
+class ManualPaymentResponse:
+    trade_id: str
+    status: OrderStatus
+    block_transaction_id: str
+
+    @classmethod
+    def from_dict(cls, data: Mapping[str, Any]) -> "ManualPaymentResponse":
+        return cls(
+            trade_id=str(data["trade_id"]),
+            status=OrderStatus(int(data["status"])),
+            block_transaction_id=str(data["block_transaction_id"]),
         )
 
 
@@ -277,4 +332,3 @@ class EPayRedirectResponse:
     location: str
     checkout_url: str
     params: dict[str, str]
-

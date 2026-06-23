@@ -1,21 +1,40 @@
 # Epusdt Python SDK
 
-`epusdt` 的 Python SDK，接口按 `GMWalletApp/epusdt` 当前代码路由实现，对齐：
+`epusdt` 的 Python SDK，按 `GMWalletApp/epusdt` 当前公开支付接口实现。
+
+当前已覆盖的商户接入能力：
 
 - `POST /payments/gmpay/v1/order/create-transaction`
 - `GET /payments/gmpay/v1/config`
 - `GET /pay/checkout-counter-resp/{trade_id}`
 - `GET /pay/check-status/{trade_id}`
 - `POST /pay/switch-network`
+- `POST /pay/submit-tx-hash/{trade_id}`
 - `GET/POST /payments/epay/v1/order/create-transaction/submit.php`
 - GMPay / EPay 两套回调验签
 
 ## 安装
 
-从 GitHub 安装：
+当前版本已经把包名配置为 `epusdt`，但还没有发布到 PyPI。
+
+所以现在可用的安装方式是：
 
 ```bash
 pip install git+https://github.com/Yufeifeio/epusdt-python-sdk.git
+```
+
+如果要启用二维码功能：
+
+```bash
+pip install "epusdt[qrcode] @ git+https://github.com/Yufeifeio/epusdt-python-sdk.git"
+```
+
+如果以后发布到 PyPI，就可以直接使用：
+
+```bash
+pip install epusdt
+pip install epusdt[qrcode]
+pip install --upgrade epusdt
 ```
 
 本地开发安装：
@@ -24,16 +43,17 @@ pip install git+https://github.com/Yufeifeio/epusdt-python-sdk.git
 pip install -e .
 ```
 
-## 核心差异
+## 功能说明
 
-和旧的 `bepusdt`/`epusdt` 非官方 SDK 不同，这个版本基于当前 `GMWalletApp/epusdt` 实现：
-
-- 使用 `pid + secret_key`，不是 `api_token`
-- 创建订单主入口是 `GMPay v1`
-- 支持创建 `status=4` 的占位订单
+- 使用 `pid + secret_key`
+- 主下单入口是 `GMPay v1`
+- 支持创建 `status=4` 占位订单
 - 支持后续 `switch-network`
+- 支持 `submit-tx-hash` 手动补单
 - 支持 `EPay submit.php` 重定向模式
-- 支持 GMPay JSON 回调和 EPay GET 回调两种验签
+- 支持 GMPay JSON 回调验签
+- 支持 EPay GET 回调验签
+- 支持二维码生成功能（可选依赖）
 
 ## 快速开始
 
@@ -112,6 +132,18 @@ redirect = client.create_epay_order(
 print(redirect.checkout_url)
 ```
 
+## 手动提交交易哈希
+
+```python
+result = client.submit_tx_hash(
+    trade_id="20260523171652123456001",
+    block_transaction_id="0xabc123",
+)
+
+print(result.status)
+print(result.block_transaction_id)
+```
+
 ## 回调验签
 
 GMPay JSON 回调：
@@ -153,6 +185,20 @@ callback = client.parse_epay_callback(params)
 print(callback.out_trade_no)
 ```
 
+## 二维码
+
+安装可选依赖后，可以直接生成二维码：
+
+```python
+order = client.get_checkout("20260523171652123456001")
+
+image = order.generate_qrcode()
+image.save("epusdt-payment.png")
+
+base64_data = order.get_qrcode_base64()
+data_uri = order.get_qrcode_data_uri()
+```
+
 ## API 一览
 
 - `create_order(...)`
@@ -160,6 +206,7 @@ print(callback.out_trade_no)
 - `get_checkout(trade_id)`
 - `check_status(trade_id)`
 - `switch_network(trade_id, token, network)`
+- `submit_tx_hash(trade_id, block_transaction_id)`
 - `build_epay_params(...)`
 - `build_epay_redirect_url(...)`
 - `create_epay_order(...)`

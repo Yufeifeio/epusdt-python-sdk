@@ -7,6 +7,7 @@ import pytest
 from epusdt import (
     APIError,
     EpusdtClient,
+    ManualPaymentResponse,
     OrderStatus,
     PaymentType,
     PublicConfig,
@@ -318,3 +319,32 @@ def test_checkout_model_parses_payment_type() -> None:
     )
     checkout = client.get_checkout("TRADE001")
     assert checkout.payment_type is PaymentType.GMPAY
+
+
+def test_submit_tx_hash() -> None:
+    session = DummySession(
+        [
+            DummyResponse(
+                200,
+                json_data={
+                    "status_code": 200,
+                    "message": "success",
+                    "data": {
+                        "trade_id": "TRADE001",
+                        "status": 2,
+                        "block_transaction_id": "0xabc123",
+                    },
+                    "request_id": "rid-5",
+                },
+            )
+        ]
+    )
+    client = EpusdtClient(
+        base_url="https://pay.example.com",
+        pid="1000",
+        secret_key="secret",
+        session=session,
+    )
+    result = client.submit_tx_hash(trade_id="TRADE001", block_transaction_id="0xabc123")
+    assert isinstance(result, ManualPaymentResponse)
+    assert result.status is OrderStatus.PAID
