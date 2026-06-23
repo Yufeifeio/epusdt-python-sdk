@@ -19,7 +19,6 @@ from .client import (
     _validate_url,
 )
 from .exceptions import (
-    APIError,
     AuthenticationError,
     ClientError,
     NetworkError,

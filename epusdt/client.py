@@ -11,7 +11,6 @@ import requests
 
 from ._version import __version__
 from .exceptions import (
-    APIError,
     AuthenticationError,
     ClientError,
     NetworkError,

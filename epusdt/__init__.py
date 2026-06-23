@@ -123,6 +123,7 @@ __all__ = [
     "generate_gmpay_signature",
     "verify_epay_signature",
     "verify_gmpay_signature",
+    "__version__",
 ]
 
 __url__ = "https://github.com/Yufeifeio/epusdt-python-sdk"

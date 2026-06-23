@@ -5,7 +5,7 @@ import io
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum, IntEnum
-from typing import Any, Mapping, Optional
+from typing import Any, Mapping
 
 
 class OrderStatus(IntEnum):
