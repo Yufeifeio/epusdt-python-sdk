@@ -1,39 +1,36 @@
 # Epusdt Python SDK
 
-`epusdt` 的 Python SDK，按 `GMWalletApp/epusdt` 当前公开支付接口实现。
+`epusdt` 的 Python SDK，面向 `GMWalletApp/epusdt` 商户接入场景。
 
-当前已覆盖的商户接入能力：
+适用于这些公开支付能力：
 
-- `POST /payments/gmpay/v1/order/create-transaction`
-- `GET /payments/gmpay/v1/config`
-- `GET /pay/checkout-counter-resp/{trade_id}`
-- `GET /pay/check-status/{trade_id}`
-- `POST /pay/switch-network`
-- `POST /pay/submit-tx-hash/{trade_id}`
-- `GET/POST /payments/epay/v1/order/create-transaction/submit.php`
-- GMPay / EPay 两套回调验签
+- GMPay 创建订单
+- 支付配置查询
+- 收银台订单查询
+- 支付状态查询
+- 切换网络 / 币种
+- 手动提交交易哈希补单
+- EPay `submit.php` 兼容接入
+- GMPay / EPay 回调验签
+- 订单二维码生成
 
 ## 安装
 
-当前版本已经把包名配置为 `epusdt`，但还没有发布到 PyPI。
-
-所以现在可用的安装方式是：
-
-```bash
-pip install git+https://github.com/Yufeifeio/epusdt-python-sdk.git
-```
-
-如果要启用二维码功能：
-
-```bash
-pip install "epusdt[qrcode] @ git+https://github.com/Yufeifeio/epusdt-python-sdk.git"
-```
-
-如果以后发布到 PyPI，就可以直接使用：
+直接从 PyPI 安装：
 
 ```bash
 pip install epusdt
+```
+
+如果需要二维码功能：
+
+```bash
 pip install epusdt[qrcode]
+```
+
+升级到最新版：
+
+```bash
 pip install --upgrade epusdt
 ```
 
@@ -43,17 +40,18 @@ pip install --upgrade epusdt
 pip install -e .
 ```
 
-## 功能说明
+## 特性
 
-- 使用 `pid + secret_key`
-- 主下单入口是 `GMPay v1`
-- 支持创建 `status=4` 占位订单
+- 对齐当前 `GMWalletApp/epusdt` 公开支付接口
+- 使用 `pid + secret_key` 签名
+- 支持 GMPay 主下单流程
+- 支持 `status=4` 占位订单
 - 支持后续 `switch-network`
 - 支持 `submit-tx-hash` 手动补单
-- 支持 `EPay submit.php` 重定向模式
-- 支持 GMPay JSON 回调验签
-- 支持 EPay GET 回调验签
-- 支持二维码生成功能（可选依赖）
+- 支持 EPay 兼容接入
+- 支持 GMPay / EPay 两套回调验签
+- 支持二维码可选依赖
+- 支持打包安装、PyPI 分发和类型提示
 
 ## 快速开始
 
@@ -79,11 +77,21 @@ order = client.create_order(
 
 print(order.trade_id)
 print(order.payment_url)
+print(order.actual_amount)
 ```
 
-## 占位订单
+## 常见用法
 
-如果你要先创建订单，再让用户在收银台选择网络和币种：
+### 1. 查询支付配置
+
+```python
+config = client.get_public_config()
+
+for asset in config.supported_assets:
+    print(asset.network, asset.tokens)
+```
+
+### 2. 创建占位订单，再让用户选网络
 
 ```python
 placeholder = client.create_order(
@@ -93,19 +101,32 @@ placeholder = client.create_order(
     notify_url="https://merchant.example.com/notify",
 )
 
-print(placeholder.status)   # OrderStatus.WAITING_SELECTION
 print(placeholder.trade_id)
+print(placeholder.status)
 
 selected = client.switch_network(
     trade_id=placeholder.trade_id,
     token="USDT",
     network="solana",
 )
+
+print(selected.trade_id)
+print(selected.receive_address)
 ```
 
-## EPay 兼容模式
+### 3. 查询收银台订单和支付状态
 
-构造 `submit.php` 跳转地址：
+```python
+checkout = client.get_checkout("20260523171652123456001")
+status = client.check_status("20260523171652123456001")
+
+print(checkout.payment_type)
+print(status.status)
+```
+
+### 4. EPay 兼容接入
+
+构造跳转地址：
 
 ```python
 url = client.build_epay_redirect_url(
@@ -119,7 +140,7 @@ url = client.build_epay_redirect_url(
 print(url)
 ```
 
-也可以直接请求网关并拿到它返回的收银台地址：
+直接请求网关并拿到收银台地址：
 
 ```python
 redirect = client.create_epay_order(
@@ -132,7 +153,7 @@ redirect = client.create_epay_order(
 print(redirect.checkout_url)
 ```
 
-## 手动提交交易哈希
+### 5. 手动提交交易哈希补单
 
 ```python
 result = client.submit_tx_hash(
@@ -144,7 +165,7 @@ print(result.status)
 print(result.block_transaction_id)
 ```
 
-## 回调验签
+### 6. 回调验签
 
 GMPay JSON 回调：
 
@@ -185,9 +206,7 @@ callback = client.parse_epay_callback(params)
 print(callback.out_trade_no)
 ```
 
-## 二维码
-
-安装可选依赖后，可以直接生成二维码：
+### 7. 生成二维码
 
 ```python
 order = client.get_checkout("20260523171652123456001")
@@ -214,6 +233,21 @@ data_uri = order.get_qrcode_data_uri()
 - `verify_epay_callback(params)`
 - `parse_gmpay_callback(payload)`
 - `parse_epay_callback(params)`
+
+## 适用说明
+
+这个 SDK 当前针对 `GMWalletApp/epusdt` 的商户公开支付接口，不包含后台管理端 `/admin/api/v1/...` 的封装。
+
+如果你的目标是商户收款接入，这个 SDK 就是当前应该使用的版本。
+
+## 验证情况
+
+- 单元测试通过
+- 构建通过
+- 干净虚拟环境安装通过
+- 安装后导入通过
+- 二维码烟测通过
+- 已发布到 PyPI
 
 ## 开发
 

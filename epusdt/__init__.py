@@ -74,5 +74,5 @@ __all__ = [
     "verify_gmpay_signature",
 ]
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 __url__ = "https://github.com/Yufeifeio/epusdt-python-sdk"
