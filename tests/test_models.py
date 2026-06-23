@@ -1,4 +1,4 @@
-from epusdt import CheckoutOrder, CreateOrderResponse, OrderStatus, PaymentType
+from epusdt import CheckoutOrder, CreateOrderResponse, Network, OrderStatus, PaymentType, Token
 
 
 def test_create_order_response_datetime_property() -> None:
@@ -37,3 +37,20 @@ def test_checkout_order_datetime_properties() -> None:
     assert checkout.expiration_datetime.year >= 2026
     assert checkout.created_datetime.year >= 2026
 
+
+def test_official_network_and_token_enums() -> None:
+    assert Network.TRON.value == "tron"
+    assert Network.SOLANA.value == "solana"
+    assert Network.ETHEREUM.value == "ethereum"
+    assert Network.BSC.value == "bsc"
+    assert Network.POLYGON.value == "polygon"
+    assert Network.PLASMA.value == "plasma"
+    assert Network.TON.value == "ton"
+    assert Network.APTOS.value == "aptos"
+
+    assert Token.USDT.value == "USDT"
+    assert Token.TRX.value == "TRX"
+    assert Token.USDC.value == "USDC"
+    assert Token.USDC_E.value == "USDC.e"
+    assert Token.SOL.value == "SOL"
+    assert Token.TON.value == "TON"

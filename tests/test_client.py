@@ -9,6 +9,7 @@ from epusdt import (
     EpusdtClient,
     InvalidNotifyURLError,
     ManualPaymentResponse,
+    Network,
     OrderExistsError,
     OrderNotFoundError,
     OrderStatus,
@@ -16,6 +17,7 @@ from epusdt import (
     PublicConfig,
     RequestParamsError,
     SignatureError,
+    Token,
     ValidationError,
     generate_epay_signature,
     generate_gmpay_signature,
@@ -153,6 +155,52 @@ def test_create_order_accepts_string_amount_and_string_status_code() -> None:
     )
     assert session.calls[0]["kwargs"]["json"]["amount"] == 100.5
     assert order.amount == 100.5
+
+
+def test_create_order_accepts_enum_values() -> None:
+    session = DummySession(
+        [
+            DummyResponse(
+                200,
+                json_data={
+                    "status_code": 200,
+                    "message": "success",
+                    "data": {
+                        "trade_id": "TRADE_ENUM_001",
+                        "order_id": "ORD_ENUM_001",
+                        "amount": 100,
+                        "currency": "CNY",
+                        "actual_amount": 14.29,
+                        "receive_address": "EQTestTonAddress001",
+                        "token": "TON",
+                        "status": 1,
+                        "expiration_time": 1779530812,
+                        "payment_url": "https://pay.example.com/pay/checkout-counter/TRADE_ENUM_001",
+                    },
+                    "request_id": "rid-enum",
+                },
+            )
+        ]
+    )
+    client = EpusdtClient(
+        base_url="https://pay.example.com",
+        pid="1000",
+        secret_key="secret",
+        session=session,
+    )
+    order = client.create_order(
+        order_id="ORD_ENUM_001",
+        amount=100,
+        currency="cny",
+        token=Token.TON,
+        network=Network.TON,
+        notify_url="https://merchant.example/notify",
+    )
+
+    payload = session.calls[0]["kwargs"]["json"]
+    assert payload["token"] == "TON"
+    assert payload["network"] == "ton"
+    assert order.token == "TON"
 
 
 def test_get_public_config_parsing() -> None:

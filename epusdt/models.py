@@ -31,14 +31,17 @@ class Network(str, Enum):
     BSC = "bsc"
     POLYGON = "polygon"
     PLASMA = "plasma"
-    OKPAY = "okpay"
+    TON = "ton"
+    APTOS = "aptos"
 
 
 class Token(str, Enum):
     USDT = "USDT"
     TRX = "TRX"
     USDC = "USDC"
+    USDC_E = "USDC.e"
     SOL = "SOL"
+    TON = "TON"
 
 
 class _QRCodeMixin:

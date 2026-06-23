@@ -38,7 +38,9 @@ jobs:
         run: pytest -q
 
       - name: 构建分发包
-        run: python -m build
+        run: |
+          rm -rf dist
+          python -m build
 
       - name: 检查包元数据
         run: python -m twine check dist/*
@@ -49,8 +51,7 @@ jobs:
           tag_name: v${{ inputs.version }}
           name: v${{ inputs.version }}
           files: |
-            dist/*.whl
-            dist/*.tar.gz
+            dist/*${{ inputs.version }}*
           generate_release_notes: true
 
       - name: 上传到 PyPI
@@ -58,5 +59,4 @@ jobs:
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-        run: python -m twine upload dist/*
-
+        run: python -m twine upload dist/*${{ inputs.version }}*

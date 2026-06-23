@@ -5,7 +5,7 @@
 [![CI](https://github.com/Yufeifeio/epusdt-python-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/Yufeifeio/epusdt-python-sdk/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-MIT-yellow.svg)](https://github.com/Yufeifeio/epusdt-python-sdk/blob/main/LICENSE)
 
-适用于 `GMWalletApp/epusdt` 商户公开支付接口的 Python SDK，提供同步与异步两套客户端，支持 `GMPay` 下单、`EPay submit.php` 兼容接入、订单查询、回调验签和收款二维码生成。
+适用于 `GMWalletApp/epusdt` 商户公开支付接口的 Python SDK，提供同步与异步两套客户端，覆盖 `GMPay` 下单、`EPay submit.php` 兼容接入、订单查询、回调验签和收款二维码生成。
 
 当前版本只封装商户公开支付能力，不包含后台管理接口。
 
@@ -29,6 +29,38 @@
 - 订单二维码生成
 - 官方 `status_code` 业务错误码映射
 - `Django` / `Flask` / `FastAPI` 接入示例
+
+## 官方支持矩阵
+
+以下内容依据 `GMWalletApp/epusdt` 当前官方源码中的默认链配置、默认币种种子和支付监听 / 校验逻辑整理，不以单个网关实例配置为准。
+
+默认启用网络：
+
+- `Tron`
+- `Ethereum`
+- `Solana`
+- `BSC`
+- `Polygon`
+- `Plasma`
+- `TON`
+- `Aptos`
+
+官方默认内置币种：
+
+- `Tron`：`USDT`、`TRX`
+- `Ethereum`：`USDT`、`USDC`
+- `Solana`：`USDT`、`USDC`、`SOL`
+- `BSC`：`USDT`、`USDC`
+- `Polygon`：`USDT`、`USDC`、`USDC.e`
+- `Plasma`：`USDT`
+- `TON`：`TON`、`USDT`
+- `Aptos`：`USDC`、`USDT`
+
+补充说明：
+
+- 官方支持按网络新增自定义代币；只要后台已经配置，SDK 可以直接传字符串，例如 `token="MOVEUSD"`。
+- `GRAM` 当前不属于官方默认支持币种，官方测试中会返回 `SupportedAssetNotFound`。
+- 本 README 不宣称 `Arbitrum`、`Base`、`X-Layer`、原生 `ETH`、原生 `BNB` 已支持，因为这次未在官方当前源码中确认到对应公开支付实现。
 
 ## 客户端选择
 
@@ -55,25 +87,21 @@ pip install epusdt[qrcode]
 pip install --upgrade epusdt
 ```
 
-本地开发安装：
+## 内置枚举
 
-```bash
-pip install -e .
-```
+SDK 内置了一组和官方默认支持矩阵对应的常用枚举：
 
-补充说明：
+- `Network`：`TRON`、`SOLANA`、`ETHEREUM`、`BSC`、`POLYGON`、`PLASMA`、`TON`、`APTOS`
+- `Token`：`USDT`、`USDC`、`USDC_E`、`TRX`、`SOL`、`TON`
 
-- `base_url` 推荐填写网关根地址，例如 `https://pay.example.com`
-- 如果你手里只有 EPay 地址，也可以直接填写 `/payments/epay/v1/order/create-transaction` 或完整 `submit.php` 地址，SDK 会自动识别
-- `amount` / `money` 支持 `int`、`float`、`Decimal` 和数字字符串
-- 如果使用 EPay 兼容接口或 `payment_type="Epay"`，建议使用数字 `pid`
+如果你的网关后台新增了自定义代币，不需要等待 SDK 发版，直接传原始字符串即可。
 
 ## 快速开始
 
 ### 同步客户端
 
 ```python
-from epusdt import EpusdtClient
+from epusdt import EpusdtClient, Network, Token
 
 with EpusdtClient(
     base_url="https://pay.example.com",
@@ -84,8 +112,8 @@ with EpusdtClient(
         order_id="ORD202606240001",
         amount=100,
         currency="cny",
-        token="USDT",
-        network="tron",
+        token=Token.USDT,
+        network=Network.TRON,
         notify_url="https://merchant.example.com/notify",
         redirect_url="https://merchant.example.com/return",
         name="会员充值",
@@ -101,7 +129,7 @@ with EpusdtClient(
 ```python
 import asyncio
 
-from epusdt import AsyncEpusdtClient
+from epusdt import AsyncEpusdtClient, Network, Token
 
 
 async def main() -> None:
@@ -114,8 +142,8 @@ async def main() -> None:
             order_id="ORD202606240099",
             amount=100,
             currency="cny",
-            token="USDT",
-            network="tron",
+            token=Token.USDT,
+            network=Network.TRON,
             notify_url="https://merchant.example.com/notify",
             redirect_url="https://merchant.example.com/return",
             name="会员充值",
@@ -312,13 +340,6 @@ image.save("epusdt-payment.png")
 
 - `PYPI_API_TOKEN`
 
-## 示例代码
-
-- `examples/basic_usage.py`：基础下单示例
-- `examples/async_basic_usage.py`：异步基础下单示例
-- `examples/flask_example.py`：Flask 创建订单与回调处理示例
-- `examples/fastapi_example.py`：FastAPI 异步创建订单与回调处理示例
-
 ## API 一览
 
 - `EpusdtClient(...)`
@@ -355,16 +376,8 @@ image.save("epusdt-payment.png")
 - 干净虚拟环境安装通过
 - 安装后导入通过
 - 二维码功能烟测通过
-- 已完成线上网关联调验证
 - 同步与异步客户端都已覆盖测试
 
-## 开发
+## 参与开发
 
-```bash
-python -m venv .venv
-. .venv/bin/activate
-pip install -U pip build pytest
-pip install -e .
-pytest
-python -m build
-```
+本地开发、测试和构建说明见 [CONTRIBUTING.md](https://github.com/Yufeifeio/epusdt-python-sdk/blob/main/CONTRIBUTING.md)。

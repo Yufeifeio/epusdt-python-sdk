@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "epusdt"
-version = "0.2.6"
+version = "0.2.7"
 description = "Epusdt 商户支付 Python SDK，支持同步/异步客户端、GMPay、EPay 兼容接入与回调验签"
 readme = "README.md"
 requires-python = ">=3.8"
