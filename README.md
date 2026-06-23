@@ -1,14 +1,22 @@
-# Epusdt Python SDK
-
-Python SDK for `GMWalletApp/epusdt`。
+# epusdt Python SDK
 
 [![PyPI version](https://img.shields.io/pypi/v/epusdt.svg)](https://pypi.org/project/epusdt/)
 [![Python versions](https://img.shields.io/pypi/pyversions/epusdt.svg)](https://pypi.org/project/epusdt/)
-[![License](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-MIT-yellow.svg)](https://github.com/Yufeifeio/epusdt-python-sdk/blob/main/LICENSE)
 
-面向 `epusdt` 商户接入场景，当前聚焦公开支付接口，不包含后台管理端接口封装。
+适用于 `GMWalletApp/epusdt` 商户公开支付接口的 Python SDK，支持 `GMPay` 下单、`EPay submit.php` 兼容接入、订单查询、回调验签和收款二维码生成。
 
-## 支持能力
+当前版本只封装商户公开支付能力，不包含后台管理接口。
+
+## 项目链接
+
+- Epusdt 官方项目：[GMWalletApp/epusdt](https://github.com/GMWalletApp/epusdt)
+- GitHub 仓库：[Yufeifeio/epusdt-python-sdk](https://github.com/Yufeifeio/epusdt-python-sdk)
+- PyPI 页面：[epusdt](https://pypi.org/project/epusdt/)
+- 更新日志：[CHANGELOG.md](https://github.com/Yufeifeio/epusdt-python-sdk/blob/main/CHANGELOG.md)
+- 示例代码：[基础用法](https://github.com/Yufeifeio/epusdt-python-sdk/blob/main/examples/basic_usage.py) / [Flask](https://github.com/Yufeifeio/epusdt-python-sdk/blob/main/examples/flask_example.py) / [FastAPI](https://github.com/Yufeifeio/epusdt-python-sdk/blob/main/examples/fastapi_example.py)
+
+## 已支持功能
 
 - GMPay 创建订单
 - 支付配置查询
@@ -22,25 +30,25 @@ Python SDK for `GMWalletApp/epusdt`。
 
 ## 安装
 
-安装：
+直接安装：
 
 ```bash
 pip install epusdt
 ```
 
-安装二维码依赖：
+需要二维码功能：
 
 ```bash
 pip install epusdt[qrcode]
 ```
 
-升级：
+升级到最新版：
 
 ```bash
 pip install --upgrade epusdt
 ```
 
-本地开发：
+本地开发安装：
 
 ```bash
 pip install -e .
@@ -61,11 +69,11 @@ order = client.create_order(
     order_id="ORD202606240001",
     amount=100,
     currency="cny",
-    token="usdt",
+    token="USDT",
     network="tron",
     notify_url="https://merchant.example.com/notify",
     redirect_url="https://merchant.example.com/return",
-    name="VIP",
+    name="会员充值",
 )
 
 print(order.trade_id)
@@ -73,7 +81,7 @@ print(order.payment_url)
 print(order.actual_amount)
 ```
 
-## 常见场景
+## 常见用法
 
 ### 查询支付配置
 
@@ -84,7 +92,7 @@ for asset in config.supported_assets:
     print(asset.network, asset.tokens)
 ```
 
-### 创建占位订单，再让用户选择网络
+### 创建待选网络订单
 
 ```python
 placeholder = client.create_order(
@@ -104,7 +112,7 @@ print(selected.trade_id)
 print(selected.receive_address)
 ```
 
-### 查询订单与状态
+### 查询订单和支付状态
 
 ```python
 checkout = client.get_checkout("20260523171652123456001")
@@ -124,13 +132,13 @@ url = client.build_epay_redirect_url(
     money=100,
     notify_url="https://merchant.example.com/notify",
     return_url="https://merchant.example.com/return",
-    name="VIP",
+    name="会员充值",
 )
 
 print(url)
 ```
 
-直接请求网关并拿到收银台地址：
+直接请求网关并获取收银台地址：
 
 ```python
 redirect = client.create_epay_order(
@@ -185,7 +193,7 @@ params = {
     "trade_no": "20260523171652123456001",
     "out_trade_no": "ORD202605230001",
     "type": "alipay",
-    "name": "VIP",
+    "name": "会员充值",
     "money": "100.0000",
     "trade_status": "TRADE_SUCCESS",
     "sign": "a1b2c3",
@@ -205,6 +213,12 @@ image = order.generate_qrcode()
 image.save("epusdt-payment.png")
 ```
 
+## 示例代码
+
+- `examples/basic_usage.py`：基础下单示例
+- `examples/flask_example.py`：Flask 创建订单与回调处理示例
+- `examples/fastapi_example.py`：FastAPI 创建订单与回调处理示例
+
 ## API 一览
 
 - `create_order(...)`
@@ -223,25 +237,21 @@ image.save("epusdt-payment.png")
 
 ## 适用范围
 
-当前 SDK 面向 `GMWalletApp/epusdt` 的商户公开支付接口。
+当前版本面向 `epusdt` 商户公开支付接口，适合以下接入场景：
 
-如果你的目标是：
-- 商户下单
-- 收银台支付
+- 服务端创建订单
+- 前端收银台支付
 - EPay 兼容接入
-- 回调验签
-
-这个仓库就是当前应该使用的 Python SDK。
+- 支付回调验签
 
 ## 验证情况
 
 - 单元测试通过
 - 构建通过
-- 干净环境安装通过
+- 干净虚拟环境安装通过
 - 安装后导入通过
-- 二维码烟测通过
-- 已发布到 PyPI
-- 已对真实线上 `epusdt` 网关做过联调
+- 二维码功能烟测通过
+- 已完成线上网关联调验证
 
 ## 开发
 

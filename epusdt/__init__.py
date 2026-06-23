@@ -1,3 +1,4 @@
+from ._version import __version__
 from .client import EpusdtClient
 from .exceptions import (
     APIError,
@@ -74,5 +75,4 @@ __all__ = [
     "verify_gmpay_signature",
 ]
 
-__version__ = "0.2.2"
 __url__ = "https://github.com/Yufeifeio/epusdt-python-sdk"

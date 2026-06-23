@@ -9,6 +9,7 @@ from urllib.parse import urlencode, urljoin, urlparse
 
 import requests
 
+from ._version import __version__
 from .exceptions import (
     APIError,
     AuthenticationError,
@@ -40,7 +41,7 @@ from .signature import (
 
 
 logger = logging.getLogger(__name__)
-USER_AGENT = "epusdt/0.2.0"
+USER_AGENT = f"epusdt/{__version__}"
 
 
 def _require_text(name: str, value: Any) -> str:

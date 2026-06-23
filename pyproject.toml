@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "epusdt"
-version = "0.2.2"
-description = "Python SDK for GMWalletApp/epusdt GMPay and EPay integrations"
+version = "0.2.3"
+description = "Epusdt 商户支付 Python SDK，支持 GMPay、EPay 兼容接入与回调验签"
 readme = "README.md"
 requires-python = ">=3.8"
 license = "MIT"
@@ -34,6 +34,9 @@ dependencies = [
 Homepage = "https://github.com/Yufeifeio/epusdt-python-sdk"
 Source = "https://github.com/Yufeifeio/epusdt-python-sdk"
 Issues = "https://github.com/Yufeifeio/epusdt-python-sdk/issues"
+PyPI = "https://pypi.org/project/epusdt/"
+Official = "https://github.com/GMWalletApp/epusdt"
+Changelog = "https://github.com/Yufeifeio/epusdt-python-sdk/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 dev = [
