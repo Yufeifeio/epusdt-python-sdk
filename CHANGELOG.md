@@ -1,5 +1,13 @@
 # 更新日志
 
+## v0.2.6
+
+- 新增官方 `status_code` 对应的细粒度异常类型
+- 同步与异步客户端统一支持业务错误码映射与 `request_id`
+- 新增 `Django` 接入示例，包含下单、GMPay 回调和 EPay 回调模板
+- 新增 GitHub Actions 自动测试、自动构建和手动发布流程
+- README 补充异常捕获示例、Django 示例入口和发布流程说明
+
 ## v0.2.5
 
 - 新增 `AsyncEpusdtClient`

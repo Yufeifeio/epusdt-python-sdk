@@ -6,8 +6,12 @@ from typing import Any
 from epusdt import (
     APIError,
     AsyncEpusdtClient,
+    InvalidNotifyURLError,
+    OrderExistsError,
+    OrderNotFoundError,
     OrderStatus,
     PaymentType,
+    RequestParamsError,
     SignatureError,
     generate_epay_signature,
     generate_gmpay_signature,
@@ -250,7 +254,48 @@ def test_async_create_epay_order_raises_api_error_on_json_failure() -> None:
             )
         except APIError as exc:
             assert exc.business_code == 10009
+            assert exc.request_id == "arid-4"
         else:  # pragma: no cover
             raise AssertionError("expected APIError")
+
+    asyncio.run(run())
+
+
+def test_async_business_error_maps_to_specific_exception() -> None:
+    async def run() -> None:
+        cases = [
+            (10002, OrderExistsError),
+            (10008, OrderNotFoundError),
+            (10009, RequestParamsError),
+            (10041, InvalidNotifyURLError),
+        ]
+        for business_code, exc_type in cases:
+            session = DummyAsyncSession(
+                [
+                    DummyAsyncResponse(
+                        400,
+                        json_data={
+                            "status_code": business_code,
+                            "message": "mapped error",
+                            "data": None,
+                            "request_id": "arid-map",
+                        },
+                        text='{"status_code":400}',
+                    )
+                ]
+            )
+            client = AsyncEpusdtClient(
+                base_url="https://pay.example.com",
+                pid="1000",
+                secret_key="secret",
+                session=session,
+            )
+            try:
+                await client.get_checkout("ATRADE_MAP")
+            except exc_type as exc:
+                assert exc.business_code == business_code
+                assert exc.request_id == "arid-map"
+            else:  # pragma: no cover
+                raise AssertionError(f"expected {exc_type.__name__}")
 
     asyncio.run(run())

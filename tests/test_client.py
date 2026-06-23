@@ -7,10 +7,14 @@ import pytest
 from epusdt import (
     APIError,
     EpusdtClient,
+    InvalidNotifyURLError,
     ManualPaymentResponse,
+    OrderExistsError,
+    OrderNotFoundError,
     OrderStatus,
     PaymentType,
     PublicConfig,
+    RequestParamsError,
     SignatureError,
     ValidationError,
     generate_epay_signature,
@@ -346,6 +350,46 @@ def test_create_epay_order_raises_api_error_on_json_failure() -> None:
             notify_url="https://merchant.example/notify",
         )
     assert exc.value.business_code == 10009
+    assert exc.value.request_id == "rid-4"
+
+
+@pytest.mark.parametrize(
+    ("business_code", "exc_type"),
+    [
+        (10002, OrderExistsError),
+        (10008, OrderNotFoundError),
+        (10009, RequestParamsError),
+        (10041, InvalidNotifyURLError),
+    ],
+)
+def test_business_error_maps_to_specific_exception(
+    business_code: int,
+    exc_type: type[APIError],
+) -> None:
+    session = DummySession(
+        [
+            DummyResponse(
+                400,
+                json_data={
+                    "status_code": business_code,
+                    "message": "mapped error",
+                    "data": None,
+                    "request_id": "rid-map",
+                },
+                text='{"status_code":400}',
+            )
+        ]
+    )
+    client = EpusdtClient(
+        base_url="https://pay.example.com",
+        pid="1000",
+        secret_key="secret",
+        session=session,
+    )
+    with pytest.raises(exc_type) as exc:
+        client.get_checkout("TRADE001")
+    assert exc.value.business_code == business_code
+    assert exc.value.request_id == "rid-map"
 
 
 def test_checkout_model_parses_payment_type() -> None:

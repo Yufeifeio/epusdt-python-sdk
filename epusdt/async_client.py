@@ -27,6 +27,7 @@ from .exceptions import (
     ServerError,
     SignatureError,
     ValidationError,
+    create_api_error,
 )
 from .models import (
     CheckStatusResponse,
@@ -46,6 +47,7 @@ from .signature import (
     verify_epay_signature,
     verify_gmpay_signature,
 )
+from .client import _response_request_id
 
 
 class AsyncEpusdtClient:
@@ -383,11 +385,12 @@ class AsyncEpusdtClient:
 
         business_code = _coerce_int(payload.get("status_code"))
         if business_code != 200:
-            raise APIError(
+            raise create_api_error(
                 str(payload.get("message", "epusdt API error")),
                 business_code=business_code,
                 http_status=response.status_code,
                 response=payload,
+                request_id=_response_request_id(payload),
             )
         return payload
 
@@ -411,11 +414,12 @@ class AsyncEpusdtClient:
                 response_text=response.text,
             )
         if payload is not None:
-            raise APIError(
+            raise create_api_error(
                 message,
                 business_code=business_code,
                 http_status=response.status_code,
                 response=payload,
+                request_id=_response_request_id(payload),
             )
         raise ClientError(
             message,

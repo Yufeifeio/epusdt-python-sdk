@@ -19,6 +19,7 @@ from .exceptions import (
     ServerError,
     SignatureError,
     ValidationError,
+    create_api_error,
 )
 from .models import (
     CheckStatusResponse,
@@ -137,6 +138,16 @@ def _coerce_int(value: Any) -> Optional[int]:
         return int(str(value).strip())
     except (TypeError, ValueError):
         return None
+
+
+def _response_request_id(payload: Optional[Mapping[str, Any]]) -> Optional[str]:
+    if not isinstance(payload, Mapping):
+        return None
+    value = payload.get("request_id")
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text or None
 
 
 class EpusdtClient:
@@ -460,11 +471,12 @@ class EpusdtClient:
 
         business_code = _coerce_int(payload.get("status_code"))
         if business_code != 200:
-            raise APIError(
+            raise create_api_error(
                 str(payload.get("message", "epusdt API error")),
                 business_code=business_code,
                 http_status=response.status_code,
                 response=payload,
+                request_id=_response_request_id(payload),
             )
         return payload
 
@@ -488,11 +500,12 @@ class EpusdtClient:
                 response_text=response.text,
             )
         if payload is not None:
-            raise APIError(
+            raise create_api_error(
                 message,
                 business_code=business_code,
                 http_status=response.status_code,
                 response=payload,
+                request_id=_response_request_id(payload),
             )
         raise ClientError(
             message,
