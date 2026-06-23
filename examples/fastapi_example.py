@@ -1,22 +1,36 @@
 from time import time
 
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, HTTPException, Request
 
-from epusdt import EpusdtClient, OrderStatus, SignatureError, TradeStatus
+from epusdt import AsyncEpusdtClient, OrderStatus, SignatureError, TradeStatus
 
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    app.state.epusdt = AsyncEpusdtClient(
+        base_url="https://pay.example.com",
+        pid="1000",
+        secret_key="epusdt_secret_key",
+    )
+    try:
+        yield
+    finally:
+        await app.state.epusdt.aclose()
 
-client = EpusdtClient(
-    base_url="https://pay.example.com",
-    pid="1000",
-    secret_key="epusdt_secret_key",
-)
+
+app = FastAPI(lifespan=lifespan)
+
+
+def get_client(request: Request) -> AsyncEpusdtClient:
+    return request.app.state.epusdt
 
 
 @app.post("/create-order")
-async def create_order():
-    order = client.create_order(
+async def create_order(request: Request):
+    client = get_client(request)
+    order = await client.create_order(
         order_id=f"FASTAPI_{int(time())}",
         amount=100,
         currency="cny",
@@ -36,6 +50,7 @@ async def create_order():
 @app.post("/notify/gmpay")
 async def gmpay_notify(request: Request):
     payload = await request.json()
+    client = get_client(request)
     try:
         callback = client.parse_gmpay_callback(payload)
     except SignatureError as exc:
@@ -51,6 +66,7 @@ async def gmpay_notify(request: Request):
 @app.get("/notify/epay")
 async def epay_notify(request: Request):
     params = dict(request.query_params)
+    client = get_client(request)
     try:
         callback = client.parse_epay_callback(params)
     except SignatureError as exc:

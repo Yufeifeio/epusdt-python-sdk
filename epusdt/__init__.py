@@ -1,4 +1,5 @@
 from ._version import __version__
+from .async_client import AsyncEpusdtClient
 from .client import EpusdtClient
 from .exceptions import (
     APIError,
@@ -41,6 +42,7 @@ from .signature import (
 
 __all__ = [
     "APIError",
+    "AsyncEpusdtClient",
     "AuthenticationError",
     "CheckStatusResponse",
     "CheckoutOrder",

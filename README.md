@@ -4,7 +4,7 @@
 [![Python versions](https://img.shields.io/pypi/pyversions/epusdt.svg)](https://pypi.org/project/epusdt/)
 [![License](https://img.shields.io/badge/license-MIT-yellow.svg)](https://github.com/Yufeifeio/epusdt-python-sdk/blob/main/LICENSE)
 
-适用于 `GMWalletApp/epusdt` 商户公开支付接口的 Python SDK，支持 `GMPay` 下单、`EPay submit.php` 兼容接入、订单查询、回调验签和收款二维码生成。
+适用于 `GMWalletApp/epusdt` 商户公开支付接口的 Python SDK，提供同步与异步两套客户端，支持 `GMPay` 下单、`EPay submit.php` 兼容接入、订单查询、回调验签和收款二维码生成。
 
 当前版本只封装商户公开支付能力，不包含后台管理接口。
 
@@ -13,9 +13,9 @@
 - Epusdt 官方项目：[GMWalletApp/epusdt](https://github.com/GMWalletApp/epusdt)
 - PyPI 页面：[epusdt](https://pypi.org/project/epusdt/)
 - 更新日志：[CHANGELOG.md](https://github.com/Yufeifeio/epusdt-python-sdk/blob/main/CHANGELOG.md)
-- 示例代码：[基础用法](https://github.com/Yufeifeio/epusdt-python-sdk/blob/main/examples/basic_usage.py) / [Flask](https://github.com/Yufeifeio/epusdt-python-sdk/blob/main/examples/flask_example.py) / [FastAPI](https://github.com/Yufeifeio/epusdt-python-sdk/blob/main/examples/fastapi_example.py)
+- 示例代码：[同步基础用法](https://github.com/Yufeifeio/epusdt-python-sdk/blob/main/examples/basic_usage.py) / [异步基础用法](https://github.com/Yufeifeio/epusdt-python-sdk/blob/main/examples/async_basic_usage.py) / [Flask](https://github.com/Yufeifeio/epusdt-python-sdk/blob/main/examples/flask_example.py) / [FastAPI](https://github.com/Yufeifeio/epusdt-python-sdk/blob/main/examples/fastapi_example.py)
 
-## 已支持功能
+## 核心能力
 
 - GMPay 创建订单
 - 支付配置查询
@@ -26,6 +26,11 @@
 - EPay `submit.php` 兼容接入
 - GMPay / EPay 回调验签
 - 订单二维码生成
+
+## 客户端选择
+
+- `EpusdtClient`：适合同步 Web 项目、普通脚本、管理后台任务
+- `AsyncEpusdtClient`：适合 `FastAPI`、异步任务队列、高并发接口服务
 
 ## 安装
 
@@ -61,6 +66,8 @@ pip install -e .
 
 ## 快速开始
 
+### 同步客户端
+
 ```python
 from epusdt import EpusdtClient
 
@@ -85,7 +92,41 @@ with EpusdtClient(
     print(order.actual_amount)
 ```
 
+### 异步客户端
+
+```python
+import asyncio
+
+from epusdt import AsyncEpusdtClient
+
+
+async def main() -> None:
+    async with AsyncEpusdtClient(
+        base_url="https://pay.example.com",
+        pid="1000",
+        secret_key="epusdt_secret_key",
+    ) as client:
+        order = await client.create_order(
+            order_id="ORD202606240099",
+            amount=100,
+            currency="cny",
+            token="USDT",
+            network="tron",
+            notify_url="https://merchant.example.com/notify",
+            redirect_url="https://merchant.example.com/return",
+            name="会员充值",
+        )
+
+        print(order.trade_id)
+        print(order.payment_url)
+
+
+asyncio.run(main())
+```
+
 ## 常见用法
+
+以下示例默认已经初始化好 `client`。如果你使用异步客户端，对应方法前加 `await` 即可。
 
 ### 查询支付配置
 
@@ -220,11 +261,14 @@ image.save("epusdt-payment.png")
 ## 示例代码
 
 - `examples/basic_usage.py`：基础下单示例
+- `examples/async_basic_usage.py`：异步基础下单示例
 - `examples/flask_example.py`：Flask 创建订单与回调处理示例
-- `examples/fastapi_example.py`：FastAPI 创建订单与回调处理示例
+- `examples/fastapi_example.py`：FastAPI 异步创建订单与回调处理示例
 
 ## API 一览
 
+- `EpusdtClient(...)`
+- `AsyncEpusdtClient(...)`
 - `create_order(...)`
 - `get_public_config()`
 - `get_checkout(trade_id)`
@@ -247,6 +291,8 @@ image.save("epusdt-payment.png")
 - 前端收银台支付
 - EPay 兼容接入
 - 支付回调验签
+- Flask / Django 等同步项目
+- FastAPI / 异步任务队列项目
 
 ## 验证情况
 
@@ -256,6 +302,7 @@ image.save("epusdt-payment.png")
 - 安装后导入通过
 - 二维码功能烟测通过
 - 已完成线上网关联调验证
+- 同步与异步客户端都已覆盖测试
 
 ## 开发
 

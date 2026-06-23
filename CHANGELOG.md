@@ -1,5 +1,13 @@
 # 更新日志
 
+## v0.2.5
+
+- 新增 `AsyncEpusdtClient`
+- 新增异步重试逻辑
+- 新增异步基础示例
+- FastAPI 示例改为真正的异步客户端接入方式
+- README / PyPI 首页补充同步与异步客户端说明
+
 ## v0.2.4
 
 - `base_url` 支持直接填写 EPay 创建订单地址或完整 `submit.php` 地址
