@@ -328,6 +328,7 @@ image.save("epusdt-payment.png")
 - `examples/flask_example.py`：同步 Flask 接入示例
 - `examples/fastapi_example.py`：异步 FastAPI 接入示例
 - `examples/django_example.py`：Django 下单、GMPay 回调、EPay 回调完整模板
+- `examples/live_gateway_check.py`：真实网关联调脚本，可串行检查配置、下单、切网和查单
 
 ## 自动化流程
 

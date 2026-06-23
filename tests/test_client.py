@@ -7,6 +7,7 @@ import pytest
 from epusdt import (
     APIError,
     EpusdtClient,
+    HTTPError,
     InvalidNotifyURLError,
     ManualPaymentResponse,
     Network,
@@ -17,6 +18,7 @@ from epusdt import (
     PublicConfig,
     RequestParamsError,
     SignatureError,
+    SupportedAssetNotFoundError,
     Token,
     ValidationError,
     generate_epay_signature,
@@ -241,6 +243,55 @@ def test_get_public_config_parsing() -> None:
     assert config.site.cashier_name == "Acme Cashier"
 
 
+def test_get_public_config_parses_official_supported_assets_variants() -> None:
+    session = DummySession(
+        [
+            DummyResponse(
+                200,
+                json_data={
+                    "status_code": 200,
+                    "message": "success",
+                    "data": {
+                        "supported_assets": [
+                            {
+                                "network": "polygon",
+                                "display_name": "Polygon",
+                                "tokens": ["USDT", "USDC", "USDC.e"],
+                            },
+                            {
+                                "network": "ton",
+                                "display_name": "TON",
+                                "tokens": ["TON", "USDT"],
+                            },
+                            {
+                                "network": "aptos",
+                                "display_name": "Aptos",
+                                "tokens": ["MOVEUSD", "USDT"],
+                            },
+                        ],
+                        "site": {"cashier_name": "Acme Cashier"},
+                        "epay": {"default_currency": "cny"},
+                        "okpay": {"enabled": False, "allow_tokens": ["USDT"]},
+                        "version": "v1.0.1",
+                    },
+                    "request_id": "rid-supported-assets",
+                },
+            )
+        ]
+    )
+    client = EpusdtClient(
+        base_url="https://pay.example.com",
+        pid="1000",
+        secret_key="secret",
+        session=session,
+    )
+    config = client.get_public_config()
+    assert [asset.network for asset in config.supported_assets] == ["polygon", "ton", "aptos"]
+    assert config.supported_assets[0].tokens == ["USDT", "USDC", "USDC.e"]
+    assert config.supported_assets[1].tokens == ["TON", "USDT"]
+    assert config.supported_assets[2].tokens == ["MOVEUSD", "USDT"]
+
+
 def test_create_epay_order_returns_redirect() -> None:
     session = DummySession(
         [
@@ -267,6 +318,51 @@ def test_create_epay_order_returns_redirect() -> None:
     assert redirect.status_code == 302
     assert redirect.location == "/pay/checkout-counter/20260523171652123456001"
     assert redirect.checkout_url == "https://pay.example.com/pay/checkout-counter/20260523171652123456001"
+
+
+def test_create_order_accepts_custom_token_string() -> None:
+    session = DummySession(
+        [
+            DummyResponse(
+                200,
+                json_data={
+                    "status_code": 200,
+                    "message": "success",
+                    "data": {
+                        "trade_id": "TRADE_CUSTOM_001",
+                        "order_id": "ORD_CUSTOM_001",
+                        "amount": 100,
+                        "currency": "CNY",
+                        "actual_amount": 14.29,
+                        "receive_address": "0x1",
+                        "token": "MOVEUSD",
+                        "status": 1,
+                        "expiration_time": 1779530812,
+                        "payment_url": "https://pay.example.com/pay/checkout-counter/TRADE_CUSTOM_001",
+                    },
+                    "request_id": "rid-custom-token",
+                },
+            )
+        ]
+    )
+    client = EpusdtClient(
+        base_url="https://pay.example.com",
+        pid="1000",
+        secret_key="secret",
+        session=session,
+    )
+    order = client.create_order(
+        order_id="ORD_CUSTOM_001",
+        amount=100,
+        currency="cny",
+        token="MOVEUSD",
+        network=Network.APTOS,
+        notify_url="https://merchant.example/notify",
+    )
+    payload = session.calls[0]["kwargs"]["json"]
+    assert payload["token"] == "MOVEUSD"
+    assert payload["network"] == "aptos"
+    assert order.token == "MOVEUSD"
 
 
 def test_base_url_accepts_full_epay_submit_url() -> None:
@@ -438,6 +534,38 @@ def test_business_error_maps_to_specific_exception(
         client.get_checkout("TRADE001")
     assert exc.value.business_code == business_code
     assert exc.value.request_id == "rid-map"
+
+
+def test_business_error_mapping_supports_supported_asset_not_found() -> None:
+    session = DummySession(
+        [
+            DummyResponse(
+                400,
+                json_data={
+                    "status_code": 10016,
+                    "message": "supported asset not found",
+                    "data": None,
+                    "request_id": "rid-10016",
+                },
+                text='{"status_code":10016}',
+            )
+        ]
+    )
+    client = EpusdtClient(
+        base_url="https://pay.example.com",
+        pid="1000",
+        secret_key="secret",
+        session=session,
+    )
+    with pytest.raises(SupportedAssetNotFoundError) as exc:
+        client.get_checkout("TRADE001")
+    assert exc.value.business_code == 10016
+    assert exc.value.request_id == "rid-10016"
+
+
+def test_top_level_exception_exports() -> None:
+    assert issubclass(HTTPError, Exception)
+    assert issubclass(SupportedAssetNotFoundError, APIError)
 
 
 def test_checkout_model_parses_payment_type() -> None:

@@ -1,5 +1,11 @@
 # 更新日志
 
+## v0.2.8
+
+- 顶层导出补齐 `HTTPError`、`SupportedAssetNotFoundError`
+- 增加官方默认支持矩阵与自定义代币场景测试
+- 增加 `live_gateway_check.py` 真实网关联调脚本
+
 ## v0.2.7
 
 - SDK 枚举补齐官方源码已确认的 `Aptos`、`TON`、`USDC.e`

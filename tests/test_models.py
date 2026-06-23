@@ -54,3 +54,20 @@ def test_official_network_and_token_enums() -> None:
     assert Token.USDC_E.value == "USDC.e"
     assert Token.SOL.value == "SOL"
     assert Token.TON.value == "TON"
+
+
+def test_official_default_supported_assets_snapshot() -> None:
+    expected = {
+        Network.TRON.value: [Token.TRX.value, Token.USDT.value],
+        Network.ETHEREUM.value: [Token.USDT.value, Token.USDC.value],
+        Network.SOLANA.value: [Token.USDT.value, Token.USDC.value, Token.SOL.value],
+        Network.BSC.value: [Token.USDT.value, Token.USDC.value],
+        Network.POLYGON.value: [Token.USDT.value, Token.USDC.value, Token.USDC_E.value],
+        Network.PLASMA.value: [Token.USDT.value],
+        Network.TON.value: [Token.TON.value, Token.USDT.value],
+        Network.APTOS.value: [Token.USDC.value, Token.USDT.value],
+    }
+    assert expected[Network.TRON.value] == ["TRX", "USDT"]
+    assert expected[Network.POLYGON.value] == ["USDT", "USDC", "USDC.e"]
+    assert expected[Network.TON.value] == ["TON", "USDT"]
+    assert expected[Network.APTOS.value] == ["USDC", "USDT"]
