@@ -1,5 +1,13 @@
 # 更新日志
 
+## v0.2.4
+
+- `base_url` 支持直接填写 EPay 创建订单地址或完整 `submit.php` 地址
+- `amount` / `money` 新增数字字符串兼容
+- `status_code` 兼容字符串形式返回值
+- 增加客户端 `close()` 与上下文管理支持
+- README 删除冗余入口并补充接入细节说明
+
 ## v0.2.3
 
 - 增加 `CHANGELOG.md`

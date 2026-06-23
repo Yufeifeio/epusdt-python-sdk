@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import json
 import logging
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from enum import Enum
 from typing import Any, Mapping, MutableMapping, Optional
-from urllib.parse import urlencode, urljoin, urlparse
+from urllib.parse import urlencode, urljoin, urlparse, urlunparse
 
 import requests
 
@@ -42,6 +42,8 @@ from .signature import (
 
 logger = logging.getLogger(__name__)
 USER_AGENT = f"epusdt/{__version__}"
+EPAY_CREATE_TRANSACTION_PATH = "/payments/epay/v1/order/create-transaction"
+EPAY_SUBMIT_PATH = f"{EPAY_CREATE_TRANSACTION_PATH}/submit.php"
 
 
 def _require_text(name: str, value: Any) -> str:
@@ -75,6 +77,21 @@ def _validate_url(name: str, value: Optional[str]) -> Optional[str]:
     return value
 
 
+def _normalize_base_url(value: str) -> str:
+    parsed = urlparse(value)
+    if parsed.scheme not in ("http", "https") or not parsed.netloc:
+        raise ValidationError("base_url must be a valid http(s) URL")
+
+    path = parsed.path.rstrip("/")
+    for suffix in (EPAY_SUBMIT_PATH, EPAY_CREATE_TRANSACTION_PATH):
+        if path.endswith(suffix):
+            path = path[: -len(suffix)]
+            break
+
+    normalized = parsed._replace(path=path, params="", query="", fragment="")
+    return urlunparse(normalized).rstrip("/")
+
+
 def _is_numeric_pid(value: str) -> bool:
     return value.isdigit()
 
@@ -84,6 +101,14 @@ def _normalize_amount(name: str, value: Any) -> Any:
         raise ValidationError(f"{name} must be a number")
     if isinstance(value, Decimal):
         numeric = value
+    elif isinstance(value, str):
+        text = value.strip()
+        if not text:
+            raise ValidationError(f"{name} must be a number")
+        try:
+            numeric = Decimal(text)
+        except InvalidOperation as exc:
+            raise ValidationError(f"{name} must be a number") from exc
     elif isinstance(value, (int, float)):
         numeric = Decimal(str(value))
     else:
@@ -105,6 +130,15 @@ def _json_value(value: Any) -> Any:
     return value
 
 
+def _coerce_int(value: Any) -> Optional[int]:
+    if value is None:
+        return None
+    try:
+        return int(str(value).strip())
+    except (TypeError, ValueError):
+        return None
+
+
 class EpusdtClient:
     def __init__(
         self,
@@ -117,9 +151,6 @@ class EpusdtClient:
         retry_delay: float = 0.5,
         session: Optional[requests.Session] = None,
     ) -> None:
-        parsed = urlparse(base_url)
-        if parsed.scheme not in ("http", "https") or not parsed.netloc:
-            raise ValidationError("base_url must be a valid http(s) URL")
         if timeout <= 0:
             raise ValidationError("timeout must be greater than 0")
         if max_retries < 0:
@@ -127,15 +158,26 @@ class EpusdtClient:
         if retry_delay < 0:
             raise ValidationError("retry_delay must be >= 0")
 
-        self.base_url = base_url.rstrip("/")
+        self.base_url = _normalize_base_url(base_url)
         self.pid = _require_text("pid", pid)
         self.secret_key = _require_text("secret_key", secret_key)
         self.timeout = timeout
         self.max_retries = max_retries
         self.retry_delay = retry_delay
+        self._owns_session = session is None
         self.session = session or requests.Session()
         self.session.headers.setdefault("Accept", "application/json")
         self.session.headers.setdefault("User-Agent", USER_AGENT)
+
+    def close(self) -> None:
+        if self._owns_session and hasattr(self.session, "close"):
+            self.session.close()
+
+    def __enter__(self) -> "EpusdtClient":
+        return self
+
+    def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+        self.close()
 
     def create_order(
         self,
@@ -416,11 +458,11 @@ class EpusdtClient:
         if response.status_code >= 400:
             self._raise_for_response(response, payload)
 
-        business_code = payload.get("status_code")
+        business_code = _coerce_int(payload.get("status_code"))
         if business_code != 200:
             raise APIError(
                 str(payload.get("message", "epusdt API error")),
-                business_code=int(business_code) if business_code is not None else None,
+                business_code=business_code,
                 http_status=response.status_code,
                 response=payload,
             )
@@ -435,12 +477,7 @@ class EpusdtClient:
         business_code = None
         if isinstance(payload, Mapping):
             message = str(payload.get("message", "")).strip()
-            raw_code = payload.get("status_code")
-            if raw_code is not None:
-                try:
-                    business_code = int(raw_code)
-                except (TypeError, ValueError):
-                    business_code = None
+            business_code = _coerce_int(payload.get("status_code"))
         if not message:
             message = response.text.strip() or f"HTTP {response.status_code}"
 

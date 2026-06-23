@@ -8,10 +8,9 @@
 
 当前版本只封装商户公开支付能力，不包含后台管理接口。
 
-## 项目链接
+## 相关链接
 
 - Epusdt 官方项目：[GMWalletApp/epusdt](https://github.com/GMWalletApp/epusdt)
-- GitHub 仓库：[Yufeifeio/epusdt-python-sdk](https://github.com/Yufeifeio/epusdt-python-sdk)
 - PyPI 页面：[epusdt](https://pypi.org/project/epusdt/)
 - 更新日志：[CHANGELOG.md](https://github.com/Yufeifeio/epusdt-python-sdk/blob/main/CHANGELOG.md)
 - 示例代码：[基础用法](https://github.com/Yufeifeio/epusdt-python-sdk/blob/main/examples/basic_usage.py) / [Flask](https://github.com/Yufeifeio/epusdt-python-sdk/blob/main/examples/flask_example.py) / [FastAPI](https://github.com/Yufeifeio/epusdt-python-sdk/blob/main/examples/fastapi_example.py)
@@ -54,31 +53,36 @@ pip install --upgrade epusdt
 pip install -e .
 ```
 
+补充说明：
+
+- `base_url` 推荐填写网关根地址，例如 `https://pay.example.com`
+- 如果你手里只有 EPay 地址，也可以直接填写 `/payments/epay/v1/order/create-transaction` 或完整 `submit.php` 地址，SDK 会自动识别
+- `amount` / `money` 支持 `int`、`float`、`Decimal` 和数字字符串
+
 ## 快速开始
 
 ```python
 from epusdt import EpusdtClient
 
-client = EpusdtClient(
+with EpusdtClient(
     base_url="https://pay.example.com",
     pid="1000",
     secret_key="epusdt_secret_key",
-)
+) as client:
+    order = client.create_order(
+        order_id="ORD202606240001",
+        amount=100,
+        currency="cny",
+        token="USDT",
+        network="tron",
+        notify_url="https://merchant.example.com/notify",
+        redirect_url="https://merchant.example.com/return",
+        name="会员充值",
+    )
 
-order = client.create_order(
-    order_id="ORD202606240001",
-    amount=100,
-    currency="cny",
-    token="USDT",
-    network="tron",
-    notify_url="https://merchant.example.com/notify",
-    redirect_url="https://merchant.example.com/return",
-    name="会员充值",
-)
-
-print(order.trade_id)
-print(order.payment_url)
-print(order.actual_amount)
+    print(order.trade_id)
+    print(order.payment_url)
+    print(order.actual_amount)
 ```
 
 ## 常见用法

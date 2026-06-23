@@ -43,6 +43,7 @@ class DummySession:
         self.responses = responses
         self.calls: list[dict[str, Any]] = []
         self.headers: dict[str, str] = {}
+        self.closed = False
 
     def request(self, method: str, url: str, timeout: float, **kwargs: Any) -> DummyResponse:
         self.calls.append(
@@ -54,6 +55,9 @@ class DummySession:
             }
         )
         return self.responses.pop(0)
+
+    def close(self) -> None:
+        self.closed = True
 
 
 def test_create_order_form_payload() -> None:
@@ -104,6 +108,47 @@ def test_create_order_form_payload() -> None:
     assert call["url"].endswith("/payments/gmpay/v1/order/create-transaction")
     assert call["kwargs"]["data"]["signature"] == "476412c422f4dd75c3d533f5c47a9cac"
     assert order.status is OrderStatus.WAITING_PAYMENT
+
+
+def test_create_order_accepts_string_amount_and_string_status_code() -> None:
+    session = DummySession(
+        [
+            DummyResponse(
+                200,
+                json_data={
+                    "status_code": "200",
+                    "message": "success",
+                    "data": {
+                        "trade_id": "TRADE002",
+                        "order_id": "ORD002",
+                        "amount": "100.50",
+                        "currency": "CNY",
+                        "actual_amount": "14.29",
+                        "receive_address": "TTestTronAddress002",
+                        "token": "USDT",
+                        "status": 1,
+                        "expiration_time": 1779530812,
+                        "payment_url": "https://pay.example.com/pay/checkout-counter/TRADE002",
+                    },
+                    "request_id": "rid-amount",
+                },
+            )
+        ]
+    )
+    client = EpusdtClient(
+        base_url="https://pay.example.com",
+        pid="1000",
+        secret_key="secret",
+        session=session,
+    )
+    order = client.create_order(
+        order_id="ORD002",
+        amount="100.50",
+        currency="cny",
+        notify_url="https://merchant.example/notify",
+    )
+    assert session.calls[0]["kwargs"]["json"]["amount"] == 100.5
+    assert order.amount == 100.5
 
 
 def test_get_public_config_parsing() -> None:
@@ -170,6 +215,27 @@ def test_create_epay_order_returns_redirect() -> None:
     assert redirect.status_code == 302
     assert redirect.location == "/pay/checkout-counter/20260523171652123456001"
     assert redirect.checkout_url == "https://pay.example.com/pay/checkout-counter/20260523171652123456001"
+
+
+def test_base_url_accepts_full_epay_submit_url() -> None:
+    client = EpusdtClient(
+        base_url="https://pay.example.com/gateway/payments/epay/v1/order/create-transaction/submit.php",
+        pid="1000",
+        secret_key="secret",
+    )
+    assert client.base_url == "https://pay.example.com/gateway"
+
+
+def test_context_manager_does_not_close_external_session() -> None:
+    session = DummySession([])
+    with EpusdtClient(
+        base_url="https://pay.example.com",
+        pid="1000",
+        secret_key="secret",
+        session=session,
+    ) as client:
+        assert client.base_url == "https://pay.example.com"
+    assert session.closed is False
 
 
 def test_callback_parsing_and_signature_verification() -> None:
