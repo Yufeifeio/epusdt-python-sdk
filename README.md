@@ -321,53 +321,6 @@ image = order.generate_qrcode()
 image.save("epusdt-payment.png")
 ```
 
-## Web 项目示例
-
-- `examples/flask_example.py`：同步 Flask 接入示例
-- `examples/fastapi_example.py`：异步 FastAPI 接入示例
-- `examples/django_example.py`：Django 下单、GMPay 回调、EPay 回调完整模板
-- `examples/live_gateway_check.py`：真实网关联调脚本，可串行检查配置、下单、切网和查单
-
-## 自动化流程
-
-仓库内已提供 GitHub Actions：
-
-- `CI`：自动运行多 Python 版本测试、构建和 `twine check`
-- `Release`：手动触发发布，自动测试、构建、创建 GitHub Release，并可上传到 PyPI
-
-发布到 PyPI 前，需要在 GitHub 仓库 `Secrets and variables / Actions` 中配置：
-
-- `PYPI_API_TOKEN`
-
-## API 一览
-
-- `EpusdtClient(...)`
-- `AsyncEpusdtClient(...)`
-- `create_order(...)`
-- `get_public_config()`
-- `get_checkout(trade_id)`
-- `check_status(trade_id)`
-- `switch_network(trade_id, token, network)`
-- `submit_tx_hash(trade_id, block_transaction_id)`
-- `build_epay_params(...)`
-- `build_epay_redirect_url(...)`
-- `create_epay_order(...)`
-- `verify_gmpay_callback(payload)`
-- `verify_epay_callback(params)`
-- `parse_gmpay_callback(payload)`
-- `parse_epay_callback(params)`
-
-## 适用范围
-
-当前版本面向 `epusdt` 商户公开支付接口，适合以下接入场景：
-
-- 服务端创建订单
-- 前端收银台支付
-- EPay 兼容接入
-- 支付回调验签
-- Flask / Django 等同步项目
-- FastAPI / 异步任务队列项目
-
 ## 验证情况
 
 - 单元测试通过
