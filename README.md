@@ -1,7 +1,7 @@
 # EPUSDT Python SDK ✨
 
-[![PyPI version](https://img.shields.io/pypi/v/epusdt.svg)](https://pypi.org/project/epusdt/)
-[![Python versions](https://img.shields.io/pypi/pyversions/epusdt.svg)](https://pypi.org/project/epusdt/)
+[![PyPI version](https://img.shields.io/pypi/v/epusdt?label=PyPI&cacheSeconds=300)](https://pypi.org/project/epusdt/)
+[![Python versions](https://img.shields.io/pypi/pyversions/epusdt?label=Python&cacheSeconds=300)](https://pypi.org/project/epusdt/)
 [![CI](https://github.com/Yufeifeio/epusdt-python-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/Yufeifeio/epusdt-python-sdk/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-MIT-yellow.svg)](https://github.com/Yufeifeio/epusdt-python-sdk/blob/main/LICENSE)
 
