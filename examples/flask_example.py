@@ -1,3 +1,4 @@
+import os
 from time import time
 
 from flask import Flask, jsonify, request
@@ -7,10 +8,11 @@ from epusdt import EpusdtClient, OrderStatus, SignatureError, TradeStatus
 
 app = Flask(__name__)
 
+# 不要在源码里硬编码真实密钥，统一从环境变量读取。
 client = EpusdtClient(
-    base_url="https://pay.example.com",
-    pid="1000",
-    secret_key="epusdt_secret_key",
+    base_url=os.environ["EPUSDT_BASE_URL"],
+    pid=os.environ["EPUSDT_PID"],
+    secret_key=os.environ["EPUSDT_SECRET_KEY"],
 )
 
 
@@ -44,7 +46,9 @@ def gmpay_notify():
         return "fail", 400
 
     if callback.status == OrderStatus.PAID:
-        # 在这里写你自己的订单处理逻辑
+        # 先验签（parse_gmpay_callback 默认 verify=True）再处理订单。
+        # 重要：这里必须做幂等处理，按 callback.order_id 判断是否已入账，
+        # 避免网关重复通知导致重复发货/重复加款。
         pass
 
     return "ok", 200
@@ -59,7 +63,7 @@ def epay_notify():
         return "fail", 400
 
     if callback.trade_status == TradeStatus.TRADE_SUCCESS:
-        # 在这里写你自己的订单处理逻辑
+        # 同样需要先验签再处理，并按 out_trade_no 做幂等去重。
         pass
 
     return "success", 200

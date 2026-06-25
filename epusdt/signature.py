@@ -46,13 +46,18 @@ def _signature_value(value: Any) -> Optional[str]:
 def _build_signing_string(params: Mapping[str, Any], excluded: Sequence[str]) -> str:
     excluded_set = set(excluded)
     parts = []
-    for key in sorted(params.keys()):
+    for key in params.keys():
         if key in excluded_set:
             continue
         value = _signature_value(params[key])
         if value in (None, ""):
             continue
         parts.append(f"{key}={value}")
+    # 官方 Go 实现对拼接后的 "key=value" 字符串整体做 sort.Strings 排序，
+    # 而不是只按 key 排序。当某个 key 是另一个 key 的前缀，且较长 key 的下一个
+    # 字符的 ASCII 小于 "="(0x3D，例如 "-"、"."、数字)时，两种排序会得到不同
+    # 结果，进而导致签名不一致。这里与官方保持字节级一致：对整体 token 排序。
+    parts.sort()
     return "&".join(parts)
 
 

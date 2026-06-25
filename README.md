@@ -32,16 +32,18 @@
 
 ## 🌐 官方支持矩阵
 
-默认启用网络：
+默认启用网络（括号内为接口实际使用的 `network` 取值）：
 
-- `Tron`
-- `Ethereum`
-- `Solana`
-- `BSC`
-- `Polygon`
-- `Plasma`
-- `TON`
-- `Aptos`
+- `Tron`（`tron`）
+- `Ethereum`（`ethereum`）
+- `Solana`（`solana`）
+- `BSC`（`binance` ⚠️ 注意不是 `bsc`）
+- `Polygon`（`polygon`）
+- `Plasma`（`plasma`）
+- `TON`（`ton`）
+- `Aptos`（`aptos`）
+
+> 建议直接使用内置的 `Network` 枚举（例如 `Network.BSC`），SDK 会自动转换成正确的链标识。
 
 官方默认内置币种：
 
@@ -313,14 +315,67 @@ image = order.generate_qrcode()
 image.save("epusdt-payment.png")
 ```
 
+二维码功能需要可选依赖：`pip install epusdt[qrcode]`。未安装时调用 `generate_qrcode()`
+会抛出带安装提示的 `ImportError`。
+
+## ⏱️ 超时与重试
+
+```python
+client = EpusdtClient(
+    base_url="https://pay.example.com",
+    pid="1000",
+    secret_key="epusdt_secret_key",
+    timeout=30.0,      # 单次请求超时（秒）
+    max_retries=2,     # 仅作用于幂等 GET 查询
+    retry_delay=0.5,   # 首次重试间隔，按指数退避
+)
+```
+
+**支付安全重要说明**：
+
+- **创建订单 / 切换网络 / 手动补单 / EPay 下单等非幂等写操作默认不会自动重试。**
+  因为请求超时时服务端可能已经建单，自动重试会造成重复下单。
+- 只有 `get_public_config` / `get_checkout` / `check_status` 这类幂等 GET 查询会按
+  `max_retries` 自动重试（针对超时、网络错误、5xx）。
+- 创建订单超时后，请用相同 `order_id` 调用 `get_checkout` / `check_status` 确认订单是否
+  已经创建，再决定是否重试，切勿盲目换号重试。
+
+## 💰 金额格式说明
+
+- `amount` / `money` 接受 `int`、`float`、`str`、`Decimal`，金额必须 **大于 0.01**。
+- 为避免浮点误差，**推荐使用字符串或 `Decimal` 传入金额**，例如 `amount="100.00"`。
+- 签名与请求体的金额字符串严格一致：SDK 会按官方 Go 的
+  `strconv.FormatFloat(f,'f',-1,64)` 规则去除末尾多余的 0（`100.50` → `100.5`，
+  `100.00` → `100`），保证签名与官方一致。
+- 不接受 `bool`，也会拒绝 `NaN` / `Infinity`。
+
+## 🔒 安全注意事项
+
+- **不要泄露 `secret_key`**：不要写进前端、日志或版本库；建议用环境变量管理。
+- **回调必须先验签再处理**：始终通过 `parse_gmpay_callback` / `parse_epay_callback`
+  （默认 `verify=True`）验证签名，不要直接信任未验签的回调参数。
+- **订单处理必须幂等**：按 `order_id` / `out_trade_no` 去重，防止重复通知导致重复入账。
+- **回调要返回官方约定的应答**：GMPay/EPay 回调成功后需返回 `ok` 或 `success`，
+  否则网关会按退避策略重复通知。
+- SDK 自身不会在日志或异常里打印 `secret_key`。
+
+## 🧬 与官方 EPUSDT 的兼容性
+
+- 适配 `GMWalletApp/epusdt`（当前对照 `v1.0.8` 源码），覆盖商户公开支付接口：
+  GMPay 下单、`/payments/gmpay/v1/config`、收银台查询、支付状态、切换网络、手动补单、
+  EPay `submit.php` 兼容下单，以及 GMPay / EPay 回调验签。
+- **不包含**后台管理（`/admin/api/v1/...`）接口，仅面向商户收款接入。
+- 与旧版 `dengstyle/epusdt`（`/api/v1/order/create-transaction`）**不兼容**。
+
 ## ✅ 验证情况
 
-- 单元测试通过
-- 构建通过
-- 干净虚拟环境安装通过
-- 安装后导入通过
-- 二维码功能烟测通过
-- 同步与异步客户端都已覆盖测试
+- 单元测试通过（`pytest`，153 项）
+- 覆盖率 95%（`signature.py` 97%，`models/exceptions/retry` 100%）
+- `ruff` / `mypy` / `bandit` 静态检查通过
+- `python -m build` 与 `twine check` 通过
+- wheel / sdist 干净虚拟环境安装并导入通过
+- 二维码可选依赖烟测通过
+- 同步与异步客户端、签名算法均与官方 `v1.0.8` 源码对照核验
 
 ## 🔧 参与开发
 
