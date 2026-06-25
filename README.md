@@ -37,13 +37,11 @@
 - `Tron`（`tron`）
 - `Ethereum`（`ethereum`）
 - `Solana`（`solana`）
-- `BSC`（`binance` ⚠️ 注意不是 `bsc`）
+- `BSC`（`binance`）
 - `Polygon`（`polygon`）
 - `Plasma`（`plasma`）
 - `TON`（`ton`）
 - `Aptos`（`aptos`）
-
-> 建议直接使用内置的 `Network` 枚举（例如 `Network.BSC`），SDK 会自动转换成正确的链标识。
 
 官方默认内置币种：
 
@@ -359,23 +357,21 @@ client = EpusdtClient(
   否则网关会按退避策略重复通知。
 - SDK 自身不会在日志或异常里打印 `secret_key`。
 
-## 🧬 与官方 EPUSDT 的兼容性
+## 🧬 接口范围
 
-- 适配 `GMWalletApp/epusdt`（当前对照 `v1.0.8` 源码），覆盖商户公开支付接口：
-  GMPay 下单、`/payments/gmpay/v1/config`、收银台查询、支付状态、切换网络、手动补单、
+- 覆盖 `GMWalletApp/epusdt` 商户公开支付接口：
+  GMPay 下单、支付配置、收银台查询、支付状态、切换网络、手动补单、
   EPay `submit.php` 兼容下单，以及 GMPay / EPay 回调验签。
 - **不包含**后台管理（`/admin/api/v1/...`）接口，仅面向商户收款接入。
-- 与旧版 `dengstyle/epusdt`（`/api/v1/order/create-transaction`）**不兼容**。
 
 ## ✅ 验证情况
 
-- 单元测试通过（`pytest`，153 项）
-- 覆盖率 95%（`signature.py` 97%，`models/exceptions/retry` 100%）
+- 单元测试通过
 - `ruff` / `mypy` / `bandit` 静态检查通过
 - `python -m build` 与 `twine check` 通过
 - wheel / sdist 干净虚拟环境安装并导入通过
 - 二维码可选依赖烟测通过
-- 同步与异步客户端、签名算法均与官方 `v1.0.8` 源码对照核验
+- 同步与异步客户端均已覆盖测试
 
 ## 🔧 参与开发
 

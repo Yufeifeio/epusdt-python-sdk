@@ -60,7 +60,6 @@ def test_official_network_and_token_enums() -> None:
     assert Network.TRON.value == "tron"
     assert Network.SOLANA.value == "solana"
     assert Network.ETHEREUM.value == "ethereum"
-    # 官方 BSC 链的网络标识是 "binance"，不是 "bsc"。
     assert Network.BSC.value == "binance"
     assert Network.POLYGON.value == "polygon"
     assert Network.PLASMA.value == "plasma"
@@ -112,7 +111,6 @@ def test_public_config_from_dict_full_and_defaults() -> None:
     assert config.okpay.enabled is True
     assert config.version == "v1.0.8"
 
-    # 缺省字段全部安全降级，不抛异常。
     empty = PublicConfig.from_dict({})
     assert empty.supported_assets == []
     assert isinstance(empty.site, SiteConfig)
@@ -146,7 +144,6 @@ def test_create_order_response_optional_fields_default() -> None:
             "expiration_time": 1779530812,
         }
     )
-    # receive_address / token / payment_url 缺省为空字符串，便于占位单场景。
     assert order.receive_address == ""
     assert order.token == ""
     assert order.payment_url == ""
@@ -175,7 +172,7 @@ def test_gmpay_callback_from_dict_ignores_unknown_fields() -> None:
             "block_transaction_id": "0xabc",
             "status": 2,
             "signature": "sig",
-            "future_field": "ignored",  # 官方未来新增字段不应导致解析失败。
+            "future_field": "ignored",
         }
     )
     assert callback.status is OrderStatus.PAID

@@ -90,7 +90,6 @@ class AsyncEpusdtClient:
             await self.session.aclose()
 
     async def close(self) -> None:
-        """与同步客户端命名保持一致的别名，内部委托给 aclose()。"""
         await self.aclose()
 
     async def __aenter__(self) -> "AsyncEpusdtClient":
@@ -348,7 +347,6 @@ class AsyncEpusdtClient:
                 )
             return response
 
-        # 与同步客户端一致：非幂等写操作默认不重试，避免超时后重复下单。
         return await async_call_with_retry(
             send,
             max_retries=self.max_retries if retry else 0,

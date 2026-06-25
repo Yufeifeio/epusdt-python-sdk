@@ -10,7 +10,6 @@ from django.views.decorators.http import require_GET, require_POST
 from epusdt import EpusdtClient, OrderStatus, SignatureError, TradeStatus
 
 
-# 不要在源码里硬编码真实密钥，统一从环境变量读取。
 client = EpusdtClient(
     base_url=os.environ["EPUSDT_BASE_URL"],
     pid=os.environ["EPUSDT_PID"],
@@ -19,8 +18,6 @@ client = EpusdtClient(
 
 
 def mark_order_paid(*, order_id: str, trade_id: str, payload: Any) -> None:
-    # 在这里写你自己的订单更新逻辑。
-    # 建议至少做幂等处理，避免重复回调导致重复入账。
     _ = (order_id, trade_id, payload)
 
 
@@ -85,4 +82,3 @@ def epay_notify(request: HttpRequest) -> HttpResponse:
         )
 
     return HttpResponse("success", status=200)
-

@@ -28,8 +28,6 @@ class Network(str, Enum):
     TRON = "tron"
     SOLANA = "solana"
     ETHEREUM = "ethereum"
-    # 官方 BSC 链在接口上送的网络标识是 "binance"（DisplayName 为 BSC），不是 "bsc"。
-    # 参见 GMWalletApp/epusdt src/model/mdb/wallet_address_mdb.go:12。
     BSC = "binance"
     POLYGON = "polygon"
     PLASMA = "plasma"

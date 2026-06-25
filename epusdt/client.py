@@ -150,7 +150,6 @@ def _response_request_id(payload: Optional[Mapping[str, Any]]) -> Optional[str]:
 
 
 def _require_data(body: Mapping[str, Any]) -> Mapping[str, Any]:
-    """从网关响应信封里取出 data，缺失或类型异常时抛出明确的 ClientError。"""
     data = body.get("data")
     if not isinstance(data, Mapping):
         raise ClientError(
@@ -158,7 +157,6 @@ def _require_data(body: Mapping[str, Any]) -> Mapping[str, Any]:
             response_text=json.dumps(body, ensure_ascii=False)[:2000],
         )
     return data
-
 
 
 class EpusdtClient:
@@ -441,9 +439,6 @@ class EpusdtClient:
                 )
             return response
 
-        # 创建订单等非幂等写操作默认不重试：超时/网络错误后服务端可能已经建单，
-        # 自动重试会触发重复下单（服务端按 order_id 去重并返回 10002），对支付安全不利。
-        # 只有幂等的 GET 查询才会按 max_retries 自动重试。
         return call_with_retry(
             send,
             max_retries=self.max_retries if retry else 0,

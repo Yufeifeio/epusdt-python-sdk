@@ -1,4 +1,3 @@
-"""打包与元数据一致性检查（不依赖已构建的 dist）。"""
 from __future__ import annotations
 
 import pathlib
@@ -10,12 +9,9 @@ PROJECT_ROOT = pathlib.Path(__file__).resolve().parent.parent
 
 def test_version_single_source_matches_pyproject() -> None:
     pyproject = (PROJECT_ROOT / "pyproject.toml").read_text(encoding="utf-8")
-    # 版本号应当是单一来源（dynamic，从 epusdt._version 读取），
-    # pyproject 里不应再硬编码 version = "x.y.z"。
     assert 'dynamic = ["version"]' in pyproject
     assert "epusdt._version" in pyproject
     assert epusdt.__version__
-    # _version.py 与包暴露的版本一致。
     from epusdt import _version
 
     assert epusdt.__version__ == _version.__version__

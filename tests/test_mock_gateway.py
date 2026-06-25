@@ -1,5 +1,3 @@
-"""Mock 网关测试：校验 SDK 对每个接口发出的 method / path / body / 签名，
-以及完整的 HTTP 状态码与异常映射矩阵。不依赖真实支付环境。"""
 from __future__ import annotations
 
 import asyncio
@@ -23,9 +21,6 @@ import requests
 import httpx
 
 
-# --------------------------------------------------------------------------- #
-# Dummy 会话                                                                    #
-# --------------------------------------------------------------------------- #
 class DummyResponse:
     def __init__(self, status_code: int, *, json_data: Any = None, text: str = "", headers=None):
         self.status_code = status_code
@@ -40,8 +35,6 @@ class DummyResponse:
 
 
 class DummySession:
-    """同步会话；responses 可包含 DummyResponse 或要抛出的异常实例。"""
-
     def __init__(self, responses: List[Any]):
         self.responses = responses
         self.calls: List[dict] = []
@@ -99,9 +92,6 @@ def ok(data: Any) -> DummyResponse:
     return DummyResponse(200, json_data={"status_code": 200, "message": "success", "data": data, "request_id": "r"})
 
 
-# --------------------------------------------------------------------------- #
-# 各接口请求形状                                                                 #
-# --------------------------------------------------------------------------- #
 def test_create_order_json_shape_and_signature() -> None:
     client = sync_client([ok({
         "trade_id": "T", "order_id": "O", "amount": 100, "currency": "CNY",
@@ -161,11 +151,9 @@ def test_get_config_check_status_switch_submit_paths() -> None:
     assert methods[1] == ("GET", "https://pay.example.com/pay/check-status/T")
     assert methods[2] == ("POST", "https://pay.example.com/pay/switch-network")
     assert methods[3] == ("POST", "https://pay.example.com/pay/submit-tx-hash/T")
-    # switch-network 请求体没有签名，只有 trade_id/token/network
     assert client.session.calls[2]["kwargs"]["json"] == {
         "trade_id": "T", "token": "USDT", "network": "solana"
     }
-    # submit-tx-hash 只发送 block_transaction_id
     assert client.session.calls[3]["kwargs"]["json"] == {"block_transaction_id": "0xabc"}
 
 
@@ -191,9 +179,6 @@ def test_epay_get_uses_query_post_uses_form() -> None:
     assert "data" in client.session.calls[1]["kwargs"]
 
 
-# --------------------------------------------------------------------------- #
-# HTTP / 异常矩阵                                                                #
-# --------------------------------------------------------------------------- #
 def test_http_200_business_non_200_raises_apierror() -> None:
     client = sync_client([DummyResponse(200, json_data={"status_code": 10009, "message": "bad", "data": None})])
     with pytest.raises(APIError) as e:
@@ -209,12 +194,11 @@ def test_http_401_raises_authentication_error() -> None:
 
 @pytest.mark.parametrize("code", [500, 502, 503, 504])
 def test_http_5xx_raises_server_error_no_retry_on_get_exhausted(code: int) -> None:
-    # GET 默认会重试 max_retries 次，这里全部返回 5xx，最终抛 ServerError。
     client = sync_client([DummyResponse(code, text="err")] * 3, max_retries=2, retry_delay=0)
     with pytest.raises(ServerError) as e:
         client.get_public_config()
     assert e.value.http_status == code
-    assert len(client.session.calls) == 3  # 1 + 2 retries
+    assert len(client.session.calls) == 3
 
 
 def test_http_200_non_json_raises_client_error() -> None:
@@ -247,14 +231,10 @@ def test_network_error_maps_to_network_error() -> None:
         client.get_public_config()
 
 
-# --------------------------------------------------------------------------- #
-# 重试安全性：写操作不重试                                                        #
-# --------------------------------------------------------------------------- #
 def test_create_order_does_not_retry_on_timeout() -> None:
     client = sync_client([requests.Timeout("t")] * 3, max_retries=2, retry_delay=0)
     with pytest.raises(RequestTimeoutError):
         client.create_order(order_id="O", amount=100, notify_url="https://m.example/n")
-    # 仅尝试一次，绝不重复下单。
     assert len(client.session.calls) == 1
 
 
@@ -278,9 +258,6 @@ def test_secret_key_not_in_exception_text() -> None:
         assert "epusdt_secret_key" not in (exc.response_text or "")
 
 
-# --------------------------------------------------------------------------- #
-# 异步对称性                                                                     #
-# --------------------------------------------------------------------------- #
 def test_async_matches_sync_paths_and_no_retry_on_write() -> None:
     async def run() -> None:
         client = async_client([httpx.TimeoutException("t")] * 3, max_retries=2, retry_delay=0)
@@ -357,27 +334,21 @@ def test_async_all_endpoints_paths_and_shapes() -> None:
 
 def test_async_http_matrix() -> None:
     async def run() -> None:
-        # 业务错误码
         c1 = async_client([DummyResponse(200, json_data={"status_code": 10008, "message": "x", "data": None})])
         with pytest.raises(APIError):
             await c1.get_public_config()
-        # 401
         c2 = async_client([DummyResponse(401, json_data={"status_code": 401, "message": "sig"}, text="sig")])
         with pytest.raises(AuthenticationError):
             await c2.get_public_config()
-        # 5xx
         c3 = async_client([DummyResponse(500, text="e")] * 3, max_retries=2, retry_delay=0)
         with pytest.raises(ServerError):
             await c3.get_public_config()
-        # 非 JSON
         c4 = async_client([DummyResponse(200, text="<html>")])
         with pytest.raises(ClientError):
             await c4.get_public_config()
-        # JSON 非对象
         c5 = async_client([DummyResponse(200, json_data=[1])])
         with pytest.raises(ClientError):
             await c5.get_public_config()
-        # 缺少 data
         c6 = async_client([DummyResponse(200, json_data={"status_code": 200, "message": "ok"})])
         with pytest.raises(ClientError):
             await c6.get_public_config()
@@ -391,7 +362,6 @@ def test_async_epay_redirect_and_html_error() -> None:
         url = a.build_epay_redirect_url(out_trade_no="O", money=100, notify_url="https://m.example/n")
         assert "submit.php?" in url and "sign=" in url
 
-        # EPay 返回 HTML 错误页（非 3xx、非 JSON）→ ClientError
         c = async_client([DummyResponse(200, text="<html>error</html>")])
         with pytest.raises(ClientError):
             await c.create_epay_order(out_trade_no="O", money=100, notify_url="https://m.example/n")
@@ -411,7 +381,7 @@ def test_async_context_manager_closes_owned_session_only() -> None:
             base_url="https://pay.example.com", pid="1000", secret_key="k", session=external
         ):
             pass
-        assert closed["v"] is False  # 外部传入的 session 不应被关闭
+        assert closed["v"] is False
 
     asyncio.run(run())
 

@@ -1,4 +1,3 @@
-"""本地参数校验与金额边界（Section 六）专项测试。"""
 from __future__ import annotations
 
 from decimal import Decimal
@@ -46,7 +45,6 @@ def test_amount_at_or_below_min_rejected(bad):
 def test_amount_above_min_accepted_by_normalizer(good):
     from epusdt.client import _normalize_amount
 
-    # 不应抛异常
     _normalize_amount("amount", good)
 
 

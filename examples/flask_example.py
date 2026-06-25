@@ -8,12 +8,15 @@ from epusdt import EpusdtClient, OrderStatus, SignatureError, TradeStatus
 
 app = Flask(__name__)
 
-# 不要在源码里硬编码真实密钥，统一从环境变量读取。
 client = EpusdtClient(
     base_url=os.environ["EPUSDT_BASE_URL"],
     pid=os.environ["EPUSDT_PID"],
     secret_key=os.environ["EPUSDT_SECRET_KEY"],
 )
+
+
+def mark_order_paid(*, order_id: str, trade_id: str, payload: dict) -> None:
+    _ = (order_id, trade_id, payload)
 
 
 @app.post("/create-order")
@@ -46,10 +49,11 @@ def gmpay_notify():
         return "fail", 400
 
     if callback.status == OrderStatus.PAID:
-        # 先验签（parse_gmpay_callback 默认 verify=True）再处理订单。
-        # 重要：这里必须做幂等处理，按 callback.order_id 判断是否已入账，
-        # 避免网关重复通知导致重复发货/重复加款。
-        pass
+        mark_order_paid(
+            order_id=callback.order_id,
+            trade_id=callback.trade_id,
+            payload=payload,
+        )
 
     return "ok", 200
 
@@ -63,8 +67,11 @@ def epay_notify():
         return "fail", 400
 
     if callback.trade_status == TradeStatus.TRADE_SUCCESS:
-        # 同样需要先验签再处理，并按 out_trade_no 做幂等去重。
-        pass
+        mark_order_paid(
+            order_id=callback.out_trade_no,
+            trade_id=callback.trade_no,
+            payload=params,
+        )
 
     return "success", 200
 

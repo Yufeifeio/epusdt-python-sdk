@@ -1,15 +1,4 @@
-"""异步客户端基础用法示例。
-
-安全说明：
-- 默认从环境变量读取网关地址与密钥，避免在源码里硬编码真实密钥；
-- 没有配置环境变量时只打印提示并退出，不会误请求真实支付网关。
-
-    export EPUSDT_BASE_URL="https://pay.your-domain.com"
-    export EPUSDT_PID="1000"
-    export EPUSDT_SECRET_KEY="your_secret_key"
-    export EPUSDT_NOTIFY_URL="https://merchant.example.com/notify"
-    python examples/async_basic_usage.py
-"""
+"""异步客户端基础用法示例。"""
 import asyncio
 import os
 from time import time

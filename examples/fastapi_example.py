@@ -10,7 +10,6 @@ from epusdt import AsyncEpusdtClient, OrderStatus, SignatureError, TradeStatus
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # 不要在源码里硬编码真实密钥，统一从环境变量读取。
     app.state.epusdt = AsyncEpusdtClient(
         base_url=os.environ["EPUSDT_BASE_URL"],
         pid=os.environ["EPUSDT_PID"],
@@ -27,6 +26,10 @@ app = FastAPI(lifespan=lifespan)
 
 def get_client(request: Request) -> AsyncEpusdtClient:
     return request.app.state.epusdt
+
+
+def mark_order_paid(*, order_id: str, trade_id: str, payload: dict) -> None:
+    _ = (order_id, trade_id, payload)
 
 
 @app.post("/create-order")
@@ -59,8 +62,11 @@ async def gmpay_notify(request: Request):
         raise HTTPException(status_code=400, detail="签名错误") from exc
 
     if callback.status == OrderStatus.PAID:
-        # 先验签再处理，并按 callback.order_id 做幂等去重，避免重复通知重复入账。
-        pass
+        mark_order_paid(
+            order_id=callback.order_id,
+            trade_id=callback.trade_id,
+            payload=payload,
+        )
 
     return "ok"
 
@@ -75,7 +81,10 @@ async def epay_notify(request: Request):
         raise HTTPException(status_code=400, detail="签名错误") from exc
 
     if callback.trade_status == TradeStatus.TRADE_SUCCESS:
-        # 先验签再处理，并按 callback.out_trade_no 做幂等去重。
-        pass
+        mark_order_paid(
+            order_id=callback.out_trade_no,
+            trade_id=callback.trade_no,
+            payload=params,
+        )
 
     return "success"
