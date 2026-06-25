@@ -5,9 +5,8 @@
 ```bash
 python -m venv .venv
 . .venv/bin/activate
-pip install -U pip build twine pytest pytest-cov
-pip install -e ".[dev,qrcode]"
-pip install ruff mypy bandit
+pip install -U pip
+pip install -e ".[dev]"
 ```
 
 ## 运行测试与检查
@@ -41,7 +40,7 @@ python -m twine check dist/*
 4. `python -m build && twine check dist/*` 通过。
 5. 在干净虚拟环境验证 `pip install dist/*.whl` 后可 `import epusdt`。
 6. 通过 GitHub Actions `Release` workflow 发布（`version` 输入需与 `_version.py` 一致）。
-   - PyPI 上传使用 `secrets.PYPI_API_TOKEN`，可按需改为 Trusted Publishing（OIDC）。
+   - PyPI 上传使用 `secrets.PYPI_API_TOKEN`。
 
 ## 说明
 

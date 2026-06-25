@@ -26,7 +26,7 @@ jobs:
       - name: 安装依赖
         run: |
           python -m pip install --upgrade pip
-          pip install -e .[dev,qrcode]
+          pip install -e ".[test,qrcode]"
 
       - name: 运行测试（带覆盖率）
         run: pytest -q --cov=epusdt --cov-report=term-missing --cov-fail-under=90
@@ -45,8 +45,7 @@ jobs:
       - name: 安装依赖
         run: |
           python -m pip install --upgrade pip
-          pip install -e .[dev,qrcode]
-          pip install ruff mypy bandit
+          pip install -e ".[lint,qrcode]"
 
       - name: ruff
         run: ruff check epusdt tests examples
@@ -73,7 +72,7 @@ jobs:
       - name: 安装构建依赖
         run: |
           python -m pip install --upgrade pip
-          pip install build twine
+          pip install -e ".[build]"
 
       - name: 构建分发包
         run: python -m build
@@ -86,4 +85,3 @@ jobs:
         with:
           name: dist
           path: dist/*
-

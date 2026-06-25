@@ -40,13 +40,32 @@ Official = "https://github.com/GMWalletApp/epusdt"
 Changelog = "https://github.com/Yufeifeio/epusdt-python-sdk/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
-dev = [
-  "build>=1.0",
+test = [
   "pytest>=8.0",
   "pytest-cov>=4.0",
+]
+lint = [
+  "ruff>=0.6",
+  "mypy>=1.8",
+  "bandit>=1.7",
   "types-requests>=2.31",
 ]
+build = [
+  "build>=1.0",
+  "twine>=5.0",
+]
 qrcode = [
+  "qrcode[pil]>=7.4",
+]
+dev = [
+  "build>=1.0",
+  "twine>=5.0",
+  "pytest>=8.0",
+  "pytest-cov>=4.0",
+  "ruff>=0.6",
+  "mypy>=1.8",
+  "bandit>=1.7",
+  "types-requests>=2.31",
   "qrcode[pil]>=7.4",
 ]
 
