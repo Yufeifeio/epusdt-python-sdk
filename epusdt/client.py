@@ -149,6 +149,18 @@ def _response_request_id(payload: Optional[Mapping[str, Any]]) -> Optional[str]:
     return text or None
 
 
+def _require_data(body: Mapping[str, Any]) -> Mapping[str, Any]:
+    """从网关响应信封里取出 data，缺失或类型异常时抛出明确的 ClientError。"""
+    data = body.get("data")
+    if not isinstance(data, Mapping):
+        raise ClientError(
+            "gateway response missing or invalid 'data' object",
+            response_text=json.dumps(body, ensure_ascii=False)[:2000],
+        )
+    return data
+
+
+
 class EpusdtClient:
     def __init__(
         self,
@@ -235,28 +247,29 @@ class EpusdtClient:
         body = self._json_request(
             "POST",
             "/payments/gmpay/v1/order/create-transaction",
+            retry=False,
             json_payload=payload if not use_form else None,
             form_payload=payload if use_form else None,
         )
-        return CreateOrderResponse.from_dict(body["data"])
+        return CreateOrderResponse.from_dict(_require_data(body))
 
     def get_public_config(self) -> PublicConfig:
         body = self._json_request("GET", "/payments/gmpay/v1/config")
-        return PublicConfig.from_dict(body["data"])
+        return PublicConfig.from_dict(_require_data(body))
 
     def get_checkout(self, trade_id: Any) -> CheckoutOrder:
         body = self._json_request(
             "GET",
             f"/pay/checkout-counter-resp/{_require_text('trade_id', trade_id)}",
         )
-        return CheckoutOrder.from_dict(body["data"])
+        return CheckoutOrder.from_dict(_require_data(body))
 
     def check_status(self, trade_id: Any) -> CheckStatusResponse:
         body = self._json_request(
             "GET",
             f"/pay/check-status/{_require_text('trade_id', trade_id)}",
         )
-        return CheckStatusResponse.from_dict(body["data"])
+        return CheckStatusResponse.from_dict(_require_data(body))
 
     def switch_network(self, *, trade_id: Any, token: Any, network: Any) -> CheckoutOrder:
         payload = {
@@ -264,8 +277,10 @@ class EpusdtClient:
             "token": _require_text("token", token),
             "network": _require_text("network", network),
         }
-        body = self._json_request("POST", "/pay/switch-network", json_payload=payload)
-        return CheckoutOrder.from_dict(body["data"])
+        body = self._json_request(
+            "POST", "/pay/switch-network", retry=False, json_payload=payload
+        )
+        return CheckoutOrder.from_dict(_require_data(body))
 
     def submit_tx_hash(self, *, trade_id: Any, block_transaction_id: Any) -> ManualPaymentResponse:
         payload = {
@@ -274,9 +289,10 @@ class EpusdtClient:
         body = self._json_request(
             "POST",
             f"/pay/submit-tx-hash/{_require_text('trade_id', trade_id)}",
+            retry=False,
             json_payload=payload,
         )
-        return ManualPaymentResponse.from_dict(body["data"])
+        return ManualPaymentResponse.from_dict(_require_data(body))
 
     def build_epay_params(
         self,
@@ -335,6 +351,7 @@ class EpusdtClient:
             response = self._request(
                 method_upper,
                 "/payments/epay/v1/order/create-transaction/submit.php",
+                retry=False,
                 params=params,
                 allow_redirects=False,
             )
@@ -342,6 +359,7 @@ class EpusdtClient:
             response = self._request(
                 method_upper,
                 "/payments/epay/v1/order/create-transaction/submit.php",
+                retry=False,
                 data=params,
                 allow_redirects=False,
             )
@@ -405,7 +423,7 @@ class EpusdtClient:
             raise SignatureError("invalid EPay callback signature")
         return EpayCallback.from_dict(params)
 
-    def _request(self, method: str, path: str, **kwargs: Any) -> requests.Response:
+    def _request(self, method: str, path: str, *, retry: bool = True, **kwargs: Any) -> requests.Response:
         url = f"{self.base_url}{path}"
 
         def send() -> requests.Response:
@@ -423,9 +441,12 @@ class EpusdtClient:
                 )
             return response
 
+        # 创建订单等非幂等写操作默认不重试：超时/网络错误后服务端可能已经建单，
+        # 自动重试会触发重复下单（服务端按 order_id 去重并返回 10002），对支付安全不利。
+        # 只有幂等的 GET 查询才会按 max_retries 自动重试。
         return call_with_retry(
             send,
-            max_retries=self.max_retries,
+            max_retries=self.max_retries if retry else 0,
             retry_delay=self.retry_delay,
             retry_name=f"{method} {path}",
         )
@@ -435,6 +456,7 @@ class EpusdtClient:
         method: str,
         path: str,
         *,
+        retry: bool = True,
         json_payload: Optional[Mapping[str, Any]] = None,
         form_payload: Optional[Mapping[str, Any]] = None,
     ) -> Mapping[str, Any]:
@@ -443,7 +465,7 @@ class EpusdtClient:
             kwargs["json"] = {key: _json_value(value) for key, value in json_payload.items()}
         if form_payload is not None:
             kwargs["data"] = stringify_params(form_payload)
-        response = self._request(method, path, **kwargs)
+        response = self._request(method, path, retry=retry, **kwargs)
         return self._parse_json_response(response)
 
     def _parse_json_response(self, response: requests.Response) -> Mapping[str, Any]:

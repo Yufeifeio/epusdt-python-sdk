@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Awaitable, Callable, TypeVar
+from typing import Awaitable, Callable, Optional, TypeVar
 import asyncio
 
 
@@ -19,7 +19,7 @@ def call_with_retry(
     retry_name: str,
 ) -> T:
     delay = retry_delay
-    last_error = None
+    last_error: Optional[BaseException] = None
 
     for attempt in range(max_retries + 1):
         try:
@@ -39,7 +39,9 @@ def call_with_retry(
             time.sleep(delay)
             delay *= 2
 
-    raise last_error  # pragma: no cover
+    if last_error is not None:  # pragma: no cover
+        raise last_error
+    raise RuntimeError("retry exhausted without capturing an error")  # pragma: no cover
 
 
 async def async_call_with_retry(
@@ -50,7 +52,7 @@ async def async_call_with_retry(
     retry_name: str,
 ) -> T:
     delay = retry_delay
-    last_error = None
+    last_error: Optional[BaseException] = None
 
     for attempt in range(max_retries + 1):
         try:
@@ -70,4 +72,6 @@ async def async_call_with_retry(
             await asyncio.sleep(delay)
             delay *= 2
 
-    raise last_error  # pragma: no cover
+    if last_error is not None:  # pragma: no cover
+        raise last_error
+    raise RuntimeError("retry exhausted without capturing an error")  # pragma: no cover

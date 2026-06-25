@@ -28,7 +28,9 @@ class Network(str, Enum):
     TRON = "tron"
     SOLANA = "solana"
     ETHEREUM = "ethereum"
-    BSC = "bsc"
+    # 官方 BSC 链在接口上送的网络标识是 "binance"（DisplayName 为 BSC），不是 "bsc"。
+    # 参见 GMWalletApp/epusdt src/model/mdb/wallet_address_mdb.go:12。
+    BSC = "binance"
     POLYGON = "polygon"
     PLASMA = "plasma"
     TON = "ton"
@@ -56,7 +58,7 @@ class _QRCodeMixin:
 
     def generate_qrcode(self, box_size: int = 10, border: int = 4) -> Any:
         try:
-            import qrcode
+            import qrcode  # type: ignore[import-untyped]
         except ImportError as exc:  # pragma: no cover
             raise ImportError(
                 "二维码功能需要先安装可选依赖: pip install epusdt[qrcode]"

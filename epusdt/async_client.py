@@ -17,6 +17,7 @@ from .client import (
     _optional_text,
     _require_text,
     _validate_url,
+    _require_data,
 )
 from .exceptions import (
     AuthenticationError,
@@ -88,6 +89,10 @@ class AsyncEpusdtClient:
         if self._owns_session and hasattr(self.session, "aclose"):
             await self.session.aclose()
 
+    async def close(self) -> None:
+        """与同步客户端命名保持一致的别名，内部委托给 aclose()。"""
+        await self.aclose()
+
     async def __aenter__(self) -> "AsyncEpusdtClient":
         return self
 
@@ -140,28 +145,29 @@ class AsyncEpusdtClient:
         body = await self._json_request(
             "POST",
             "/payments/gmpay/v1/order/create-transaction",
+            retry=False,
             json_payload=payload if not use_form else None,
             form_payload=payload if use_form else None,
         )
-        return CreateOrderResponse.from_dict(body["data"])
+        return CreateOrderResponse.from_dict(_require_data(body))
 
     async def get_public_config(self) -> PublicConfig:
         body = await self._json_request("GET", "/payments/gmpay/v1/config")
-        return PublicConfig.from_dict(body["data"])
+        return PublicConfig.from_dict(_require_data(body))
 
     async def get_checkout(self, trade_id: Any) -> CheckoutOrder:
         body = await self._json_request(
             "GET",
             f"/pay/checkout-counter-resp/{_require_text('trade_id', trade_id)}",
         )
-        return CheckoutOrder.from_dict(body["data"])
+        return CheckoutOrder.from_dict(_require_data(body))
 
     async def check_status(self, trade_id: Any) -> CheckStatusResponse:
         body = await self._json_request(
             "GET",
             f"/pay/check-status/{_require_text('trade_id', trade_id)}",
         )
-        return CheckStatusResponse.from_dict(body["data"])
+        return CheckStatusResponse.from_dict(_require_data(body))
 
     async def switch_network(self, *, trade_id: Any, token: Any, network: Any) -> CheckoutOrder:
         payload = {
@@ -169,8 +175,10 @@ class AsyncEpusdtClient:
             "token": _require_text("token", token),
             "network": _require_text("network", network),
         }
-        body = await self._json_request("POST", "/pay/switch-network", json_payload=payload)
-        return CheckoutOrder.from_dict(body["data"])
+        body = await self._json_request(
+            "POST", "/pay/switch-network", retry=False, json_payload=payload
+        )
+        return CheckoutOrder.from_dict(_require_data(body))
 
     async def submit_tx_hash(
         self,
@@ -184,9 +192,10 @@ class AsyncEpusdtClient:
         body = await self._json_request(
             "POST",
             f"/pay/submit-tx-hash/{_require_text('trade_id', trade_id)}",
+            retry=False,
             json_payload=payload,
         )
-        return ManualPaymentResponse.from_dict(body["data"])
+        return ManualPaymentResponse.from_dict(_require_data(body))
 
     def build_epay_params(
         self,
@@ -249,6 +258,7 @@ class AsyncEpusdtClient:
             response = await self._request(
                 method_upper,
                 EPAY_SUBMIT_PATH,
+                retry=False,
                 params=params,
                 follow_redirects=False,
             )
@@ -256,6 +266,7 @@ class AsyncEpusdtClient:
             response = await self._request(
                 method_upper,
                 EPAY_SUBMIT_PATH,
+                retry=False,
                 data=params,
                 follow_redirects=False,
             )
@@ -319,7 +330,7 @@ class AsyncEpusdtClient:
             raise SignatureError("invalid EPay callback signature")
         return EpayCallback.from_dict(params)
 
-    async def _request(self, method: str, path: str, **kwargs: Any) -> httpx.Response:
+    async def _request(self, method: str, path: str, *, retry: bool = True, **kwargs: Any) -> httpx.Response:
         url = f"{self.base_url}{path}"
 
         async def send() -> httpx.Response:
@@ -337,9 +348,10 @@ class AsyncEpusdtClient:
                 )
             return response
 
+        # 与同步客户端一致：非幂等写操作默认不重试，避免超时后重复下单。
         return await async_call_with_retry(
             send,
-            max_retries=self.max_retries,
+            max_retries=self.max_retries if retry else 0,
             retry_delay=self.retry_delay,
             retry_name=f"{method} {path}",
         )
@@ -349,6 +361,7 @@ class AsyncEpusdtClient:
         method: str,
         path: str,
         *,
+        retry: bool = True,
         json_payload: Optional[Mapping[str, Any]] = None,
         form_payload: Optional[Mapping[str, Any]] = None,
     ) -> Mapping[str, Any]:
@@ -357,7 +370,7 @@ class AsyncEpusdtClient:
             kwargs["json"] = {key: _json_value(value) for key, value in json_payload.items()}
         if form_payload is not None:
             kwargs["data"] = stringify_params(form_payload)
-        response = await self._request(method, path, **kwargs)
+        response = await self._request(method, path, retry=retry, **kwargs)
         return self._parse_json_response(response)
 
     def _parse_json_response(self, response: httpx.Response) -> Mapping[str, Any]:

@@ -7,3 +7,6 @@ build/
 dist/
 .venv/
 
+.mypy_cache/
+.ruff_cache/
+htmlcov/

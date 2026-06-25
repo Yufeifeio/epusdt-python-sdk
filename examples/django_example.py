@@ -1,4 +1,5 @@
 import json
+import os
 import time
 from typing import Any
 
@@ -9,10 +10,11 @@ from django.views.decorators.http import require_GET, require_POST
 from epusdt import EpusdtClient, OrderStatus, SignatureError, TradeStatus
 
 
+# 不要在源码里硬编码真实密钥，统一从环境变量读取。
 client = EpusdtClient(
-    base_url="https://pay.example.com",
-    pid="1000",
-    secret_key="epusdt_secret_key",
+    base_url=os.environ["EPUSDT_BASE_URL"],
+    pid=os.environ["EPUSDT_PID"],
+    secret_key=os.environ["EPUSDT_SECRET_KEY"],
 )
 
 

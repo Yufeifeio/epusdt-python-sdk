@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "epusdt"
-version = "0.2.8"
+dynamic = ["version"]
 description = "Epusdt 商户支付 Python SDK，支持同步/异步客户端、GMPay、EPay 兼容接入与回调验签"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -43,6 +43,7 @@ Changelog = "https://github.com/Yufeifeio/epusdt-python-sdk/blob/main/CHANGELOG.
 dev = [
   "build>=1.0",
   "pytest>=8.0",
+  "pytest-cov>=4.0",
 ]
 qrcode = [
   "qrcode[pil]>=7.4",
@@ -51,8 +52,23 @@ qrcode = [
 [tool.setuptools]
 include-package-data = true
 
+[tool.setuptools.dynamic]
+version = { attr = "epusdt._version.__version__" }
+
 [tool.setuptools.package-data]
 epusdt = ["py.typed"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+  "live: 需要真实 EPUSDT 网关环境变量，默认跳过",
+]
+
+[tool.mypy]
+warn_unused_ignores = false
+ignore_missing_imports = false
+
+[[tool.mypy.overrides]]
+module = ["qrcode.*"]
+ignore_missing_imports = true
+

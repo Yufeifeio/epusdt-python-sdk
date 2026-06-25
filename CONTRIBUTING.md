@@ -5,21 +5,43 @@
 ```bash
 python -m venv .venv
 . .venv/bin/activate
-pip install -U pip build pytest
-pip install -e .
+pip install -U pip build twine pytest pytest-cov
+pip install -e ".[dev,qrcode]"
+pip install ruff mypy bandit
 ```
 
-## 运行测试
+## 运行测试与检查
 
 ```bash
-pytest
+pytest -q
+pytest --cov=epusdt --cov-report=term-missing
+ruff check epusdt tests examples
+mypy epusdt
+bandit -r epusdt
+```
+
+真实网关联调（默认跳过，需配置环境变量）：
+
+```bash
+EPUSDT_BASE_URL=... EPUSDT_PID=... EPUSDT_SECRET_KEY=... pytest -m live
 ```
 
 ## 构建发布包
 
 ```bash
 python -m build
+python -m twine check dist/*
 ```
+
+## 发布清单（Release Checklist）
+
+1. 修改 **唯一的版本来源** `epusdt/_version.py`（`pyproject.toml` 通过 `dynamic` 自动读取）。
+2. 更新 `CHANGELOG.md`。
+3. `pytest` 全绿、覆盖率 ≥90%、`ruff`/`mypy`/`bandit` 通过。
+4. `python -m build && twine check dist/*` 通过。
+5. 在干净虚拟环境验证 `pip install dist/*.whl` 后可 `import epusdt`。
+6. 通过 GitHub Actions `Release` workflow 发布（`version` 输入需与 `_version.py` 一致）。
+   - PyPI 上传使用 `secrets.PYPI_API_TOKEN`，可按需改为 Trusted Publishing（OIDC）。
 
 ## 说明
 

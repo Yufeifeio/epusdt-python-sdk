@@ -206,7 +206,7 @@ def create_api_error(
     response: Optional[Any] = None,
     request_id: Optional[str] = None,
 ) -> APIError:
-    exc_cls = ERROR_CODE_MAP.get(business_code, APIError)
+    exc_cls = APIError if business_code is None else ERROR_CODE_MAP.get(business_code, APIError)
     return exc_cls(
         message,
         business_code=business_code,
