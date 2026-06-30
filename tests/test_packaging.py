@@ -41,6 +41,7 @@ def test_both_clients_and_helpers_exported() -> None:
     for name in (
         "EpusdtClient",
         "AsyncEpusdtClient",
+        "build_epay_type_selector",
         "generate_gmpay_signature",
         "generate_epay_signature",
         "verify_gmpay_signature",

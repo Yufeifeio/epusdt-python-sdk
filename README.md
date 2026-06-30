@@ -205,6 +205,24 @@ url = client.build_epay_redirect_url(
 print(url)
 ```
 
+指定 EPay `type` selector：
+
+```python
+from epusdt import Network, Token, build_epay_type_selector
+
+url = client.build_epay_redirect_url(
+    out_trade_no="ORD202606240004",
+    money=100,
+    notify_url="https://merchant.example.com/notify",
+    type=build_epay_type_selector(Token.USDT, Network.TRON),
+)
+```
+
+官方 EPay 入口的 `type` 支持空值、`alipay`，或当前网关已启用资产的
+`token.network` selector，例如 `usdt.tron`。selector 会优先确定本次订单的
+`token/network`；如果要接入 `USDC.e` 这类币种名本身带点的资产，请继续使用
+`token` 和 `network` 参数。
+
 直接请求网关并获取收银台地址：
 
 ```python
@@ -270,6 +288,8 @@ params = {
 callback = client.parse_epay_callback(params)
 print(callback.out_trade_no)
 ```
+
+EPay 回调里的 `callback.type` 可能是 `alipay`，也可能是 `usdt.tron` 这类 selector。
 
 ### 业务错误码捕获
 

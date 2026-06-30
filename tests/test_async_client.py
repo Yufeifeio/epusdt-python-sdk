@@ -13,6 +13,9 @@ from epusdt import (
     PaymentType,
     RequestParamsError,
     SignatureError,
+    Token,
+    Network,
+    build_epay_type_selector,
     generate_epay_signature,
     generate_gmpay_signature,
 )
@@ -172,6 +175,20 @@ def test_async_callback_helpers() -> None:
     epay = client.parse_epay_callback(epay_payload)
     assert epay.trade_status.value == "TRADE_SUCCESS"
 
+    selector_payload = {
+        "pid": "1000",
+        "trade_no": "TRADE_SELECTOR_001",
+        "out_trade_no": "ORD_SELECTOR_001",
+        "type": "usdt.tron",
+        "name": "VIP",
+        "money": "100.0000",
+        "trade_status": "TRADE_SUCCESS",
+        "sign_type": "MD5",
+    }
+    selector_payload["sign"] = generate_epay_signature(selector_payload, "secret")
+    selector_callback = client.parse_epay_callback(selector_payload)
+    assert selector_callback.type == "usdt.tron"
+
     bad_payload = dict(gmpay_payload)
     bad_payload["signature"] = "bad"
     try:
@@ -259,6 +276,38 @@ def test_async_create_epay_order_raises_api_error_on_json_failure() -> None:
             raise AssertionError("expected APIError")
 
     asyncio.run(run())
+
+
+def test_async_build_epay_params_supports_type_selector_and_omitted_type() -> None:
+    client = AsyncEpusdtClient(
+        base_url="https://pay.example.com",
+        pid="1000",
+        secret_key="secret",
+    )
+    selector = build_epay_type_selector(Token.USDT, Network.TRON)
+    params = client.build_epay_params(
+        out_trade_no="AORD_SELECTOR_001",
+        money=100,
+        notify_url="https://merchant.example/notify",
+        type=selector,
+    )
+    assert params["type"] == "usdt.tron"
+    assert params["sign"] == generate_epay_signature(
+        {k: v for k, v in params.items() if k not in ("sign", "sign_type")},
+        "secret",
+    )
+
+    omitted = client.build_epay_params(
+        out_trade_no="AORD_SELECTOR_002",
+        money=100,
+        notify_url="https://merchant.example/notify",
+        type="",
+    )
+    assert "type" not in omitted
+    assert omitted["sign"] == generate_epay_signature(
+        {k: v for k, v in omitted.items() if k not in ("sign", "sign_type")},
+        "secret",
+    )
 
 
 def test_async_business_error_maps_to_specific_exception() -> None:

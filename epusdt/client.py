@@ -96,6 +96,14 @@ def _is_numeric_pid(value: str) -> bool:
     return value.isdigit()
 
 
+def build_epay_type_selector(token: Any, network: Any) -> str:
+    token_text = _require_text("token", token).lower()
+    network_text = _require_text("network", network).lower()
+    if "." in token_text or "." in network_text:
+        raise ValidationError("EPay type selector must be in token.network format")
+    return f"{token_text}.{network_text}"
+
+
 def _normalize_amount(name: str, value: Any) -> Any:
     if isinstance(value, bool):
         raise ValidationError(f"{name} must be a number")
@@ -314,8 +322,10 @@ class EpusdtClient:
             "money": _normalize_amount("money", money),
             "out_trade_no": _require_text("out_trade_no", out_trade_no),
             "notify_url": _validate_url("notify_url", _require_text("notify_url", notify_url)),
-            "type": _require_text("type", type),
         }
+        type_text = _optional_text("type", type)
+        if type_text:
+            params["type"] = type_text
         if return_url:
             params["return_url"] = _validate_url("return_url", _require_text("return_url", return_url))
         name_text = _optional_text("name", name)

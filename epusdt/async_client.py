@@ -218,8 +218,10 @@ class AsyncEpusdtClient:
             "money": _normalize_amount("money", money),
             "out_trade_no": _require_text("out_trade_no", out_trade_no),
             "notify_url": _validate_url("notify_url", _require_text("notify_url", notify_url)),
-            "type": _require_text("type", type),
         }
+        type_text = _optional_text("type", type)
+        if type_text:
+            params["type"] = type_text
         if return_url:
             params["return_url"] = _validate_url("return_url", _require_text("return_url", return_url))
         name_text = _optional_text("name", name)

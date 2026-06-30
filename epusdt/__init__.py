@@ -1,6 +1,6 @@
 from ._version import __version__
 from .async_client import AsyncEpusdtClient
-from .client import EpusdtClient
+from .client import EpusdtClient, build_epay_type_selector
 from .exceptions import (
     APIError,
     AuthenticationError,
@@ -121,6 +121,7 @@ __all__ = [
     "TradeStatus",
     "TransactionAlreadyProcessedError",
     "ValidationError",
+    "build_epay_type_selector",
     "build_epay_signing_string",
     "build_gmpay_signing_string",
     "generate_epay_signature",

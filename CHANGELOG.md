@@ -1,5 +1,12 @@
 # 更新日志
 
+## v0.3.1
+
+- 兼容官方 EPay `type=token.network` selector 行为
+- 新增 `build_epay_type_selector()`，便于构造 `usdt.tron` 这类 EPay selector
+- EPay 参数构造支持省略 `type`
+- 补充 selector 下单参数、回调验签和同步/异步一致性测试
+
 ## v0.3.0
 
 - `Network.BSC` 的链标识更正为 `"binance"`
