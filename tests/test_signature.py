@@ -35,7 +35,26 @@ def test_gmpay_signature_matches_docs() -> None:
         "order_id=ORD202605230001&pid=1000&"
         "redirect_url=https://merchant.example/return&token=usdt"
     )
-    assert generate_gmpay_signature(params, "epusdt_secret_key") == "476412c422f4dd75c3d533f5c47a9cac"
+    assert (
+        generate_gmpay_signature(params, "epusdt_secret_key")
+        == "6f874b1919d95081835e2809b620e354a5866f5a6dbb2e432d1627f1eb10059d"
+    )
+
+
+def test_gmpay_hmac_sha256_fixed_vector() -> None:
+    params = {
+        "signature": "ignored",
+        "pid": "1000",
+        "empty": "",
+        "nil": None,
+        "name": "VIP",
+        "amount": 100,
+    }
+    assert build_gmpay_signing_string(params) == "amount=100&name=VIP&pid=1000"
+    assert (
+        generate_gmpay_signature(params, "test-secret")
+        == "ced9141fab53a83d1178f903e7c22d8a2a7033520f31e319934e92455a008b6c"
+    )
 
 
 def test_epay_signature_matches_docs() -> None:
@@ -61,10 +80,12 @@ def test_signature_verification_helpers() -> None:
     gmpay = {"pid": "1000", "order_id": "A001", "amount": 1, "signature": ""}
     gmpay["signature"] = generate_gmpay_signature(gmpay, "secret")
     assert verify_gmpay_signature(gmpay, "secret")
+    assert len(gmpay["signature"]) == 64
 
     epay = {"pid": "1000", "money": 1, "out_trade_no": "A001", "sign_type": "MD5", "sign": ""}
     epay["sign"] = generate_epay_signature(epay, "secret")
     assert verify_epay_signature(epay, "secret")
+    assert len(epay["sign"]) == 32
 
 
 def test_excludes_signature_and_sign_fields() -> None:

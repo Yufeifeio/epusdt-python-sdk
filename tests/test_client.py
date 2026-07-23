@@ -115,7 +115,10 @@ def test_create_order_form_payload() -> None:
     call = session.calls[0]
     assert call["method"] == "POST"
     assert call["url"].endswith("/payments/gmpay/v1/order/create-transaction")
-    assert call["kwargs"]["data"]["signature"] == "476412c422f4dd75c3d533f5c47a9cac"
+    assert (
+        call["kwargs"]["data"]["signature"]
+        == "6f874b1919d95081835e2809b620e354a5866f5a6dbb2e432d1627f1eb10059d"
+    )
     assert order.status is OrderStatus.WAITING_PAYMENT
 
 

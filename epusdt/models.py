@@ -216,6 +216,7 @@ class CheckoutOrder(_QRCodeMixin):
     payment_url: str
     created_at: int
     is_selected: bool
+    server_time: int = 0
 
     @property
     def expiration_datetime(self) -> datetime:
@@ -224,6 +225,10 @@ class CheckoutOrder(_QRCodeMixin):
     @property
     def created_datetime(self) -> datetime:
         return datetime.fromtimestamp(self.created_at / 1000, tz=timezone.utc)
+
+    @property
+    def server_datetime(self) -> datetime:
+        return datetime.fromtimestamp(self.server_time / 1000, tz=timezone.utc)
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> "CheckoutOrder":
@@ -242,6 +247,7 @@ class CheckoutOrder(_QRCodeMixin):
             payment_url=str(data.get("payment_url", "")),
             created_at=int(data["created_at"]),
             is_selected=bool(data.get("is_selected", False)),
+            server_time=int(data.get("server_time", 0)),
         )
 
 

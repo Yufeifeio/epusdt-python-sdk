@@ -1,6 +1,6 @@
 # EPUSDT Python SDK ✨
 
-[![PyPI version](https://img.shields.io/pypi/v/epusdt?label=PyPI&cacheSeconds=60&v=0.3.1)](https://pypi.org/project/epusdt/)
+[![PyPI version](https://img.shields.io/pypi/v/epusdt?label=PyPI&cacheSeconds=60&v=0.4.0)](https://pypi.org/project/epusdt/)
 [![Python versions](https://img.shields.io/pypi/pyversions/epusdt?label=Python&cacheSeconds=300)](https://pypi.org/project/epusdt/)
 [![CI](https://github.com/Yufeifeio/epusdt-python-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/Yufeifeio/epusdt-python-sdk/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-MIT-yellow.svg)](https://github.com/Yufeifeio/epusdt-python-sdk/blob/main/LICENSE)
@@ -19,6 +19,7 @@
 ## ✨ 核心能力
 
 - GMPay 创建订单
+- GMPay HMAC-SHA256 签名
 - 支付配置查询
 - 收银台订单查询
 - 支付状态查询
@@ -370,6 +371,7 @@ client = EpusdtClient(
 ## 🔒 安全注意事项
 
 - **不要泄露 `secret_key`**：不要写进前端、日志或版本库；建议用环境变量管理。
+- **签名算法要区分接口**：GMPay 使用 HMAC-SHA256，EPay 兼容接口使用 MD5。
 - **回调必须先验签再处理**：始终通过 `parse_gmpay_callback` / `parse_epay_callback`
   （默认 `verify=True`）验证签名，不要直接信任未验签的回调参数。
 - **订单处理必须幂等**：按 `order_id` / `out_trade_no` 去重，防止重复通知导致重复入账。

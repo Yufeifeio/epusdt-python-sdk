@@ -51,9 +51,55 @@ def test_checkout_order_datetime_properties() -> None:
         payment_url="",
         created_at=1779530212000,
         is_selected=False,
+        server_time=1779530213000,
     )
     assert checkout.expiration_datetime.year >= 2026
     assert checkout.created_datetime.year >= 2026
+    assert checkout.server_datetime.year >= 2026
+    assert checkout.server_time == 1779530213000
+
+
+def test_checkout_order_from_dict_parses_server_time_default() -> None:
+    checkout = CheckoutOrder.from_dict(
+        {
+            "trade_id": "TRADE001",
+            "amount": 100,
+            "actual_amount": 14.29,
+            "token": "USDT",
+            "currency": "CNY",
+            "receive_address": "addr",
+            "network": "tron",
+            "status": 1,
+            "payment_type": "gmpay",
+            "expiration_time": 1779530812000,
+            "redirect_url": "https://merchant.example/return",
+            "payment_url": "",
+            "created_at": 1779530212000,
+            "server_time": 1779530213000,
+            "is_selected": False,
+        }
+    )
+    assert checkout.server_time == 1779530213000
+
+    older = CheckoutOrder.from_dict(
+        {
+            "trade_id": "TRADE002",
+            "amount": 100,
+            "actual_amount": 14.29,
+            "token": "USDT",
+            "currency": "CNY",
+            "receive_address": "addr",
+            "network": "tron",
+            "status": 1,
+            "payment_type": "gmpay",
+            "expiration_time": 1779530812000,
+            "redirect_url": "",
+            "payment_url": "",
+            "created_at": 1779530212000,
+            "is_selected": False,
+        }
+    )
+    assert older.server_time == 0
 
 
 def test_official_network_and_token_enums() -> None:

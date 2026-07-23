@@ -1,5 +1,13 @@
 # 更新日志
 
+## v0.4.0
+
+- GMPay 创建订单签名更新为 HMAC-SHA256
+- GMPay JSON 回调验签同步更新为 HMAC-SHA256
+- EPay `submit.php` 兼容签名继续使用 MD5
+- `CheckoutOrder` 增加 `server_time` 字段解析
+- 补充签名固定向量和收银台响应模型测试
+
 ## v0.3.1
 
 - 兼容官方 EPay `type=token.network` selector 行为

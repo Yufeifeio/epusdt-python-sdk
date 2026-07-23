@@ -66,8 +66,12 @@ def build_epay_signing_string(params: Mapping[str, Any]) -> str:
 
 
 def generate_gmpay_signature(params: Mapping[str, Any], secret_key: str) -> str:
-    sign_str = build_gmpay_signing_string(params) + secret_key
-    return hashlib.md5(sign_str.encode("utf-8")).hexdigest().lower()  # nosec B324
+    sign_str = build_gmpay_signing_string(params)
+    return hmac.new(
+        secret_key.encode("utf-8"),
+        sign_str.encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
 
 
 def generate_epay_signature(params: Mapping[str, Any], secret_key: str) -> str:
